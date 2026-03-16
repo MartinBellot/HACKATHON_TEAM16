@@ -1,0 +1,30 @@
+{
+  "name": "CarbonTrack",
+  "short_name": "CarbonTrack",
+  "description": "Suivi de l'empreinte carbone des sites physiques avec dashboard, comparaison et saisie mobile.",
+  "theme_color": "#0b1712",
+  "background_color": "#0b1712",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "start_url": "/dashboard",
+  "categories": [
+    "business",
+    "productivity",
+    "utilities"
+  ],
+  "icons": [
+    {
+      "src": "assets/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

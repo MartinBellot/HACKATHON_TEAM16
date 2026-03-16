@@ -4,24 +4,18 @@
   <meta charset="utf-8">
   <title>CarbonTrack – Empreinte carbone</title>
   <base href="/">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Calculer l'empreinte carbone d'un site physique">
-  <meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="CarbonTrack calcule, compare et suit l'empreinte carbone de vos sites physiques depuis le web ou en mode application mobile.">
+  <meta name="theme-color" content="#0b1712">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="CarbonTrack">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
-  <link rel="manifest" href="manifest.json">
+  <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="assets/icons/icon-192x192.png">
 </head>
 <body>
   <app-root></app-root>
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/ngsw-worker.js')
-          .then(() => console.log('SW registered'))
-          .catch(err => console.log('SW registration failed', err));
-      });
-    }
-  </script>
 </body>
 </html>
