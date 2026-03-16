@@ -23,6 +23,9 @@ public class CarbonCalculationService {
     // Facteur d'émission pour le parking (kgCO2e/place/an)
     private static final double PARKING_EMISSION_FACTOR = 150.0;
 
+    // Durée de vie de référence du bâtiment (RE2020)
+    private static final double BUILDING_LIFESPAN = 50.0;
+
     /**
      * Calcule l'empreinte carbone totale d'un site
      */
@@ -33,8 +36,8 @@ public class CarbonCalculationService {
         // Calcul de l'empreinte opérationnelle annuelle
         double operationalFootprint = calculateOperationalFootprint(site);
 
-        // Calcul des indicateurs
-        double totalFootprint = constructionFootprint + operationalFootprint;
+        // Calcul des indicateurs (annualisé : construction amortie sur 50 ans + opérationnel annuel)
+        double totalFootprint = (constructionFootprint / BUILDING_LIFESPAN) + operationalFootprint;
         double footprintPerM2 = totalFootprint / site.getTotalSurface();
         double footprintPerEmployee = site.getEmployees() != null && site.getEmployees() > 0
                 ? totalFootprint / site.getEmployees()
