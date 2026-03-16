@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit, ElementRef, ViewChild } from '@angular/core';
+import { Component, OnInit, AfterViewInit, ElementRef, ViewChild, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { Chart, registerables } from 'chart.js';
@@ -14,273 +14,407 @@ Chart.register(...registerables);
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="shell">
-      <!-- Ambient background -->
-      <div class="ambient">
-        <svg class="ambient-svg" viewBox="0 0 1200 800" preserveAspectRatio="none">
-          <path class="a-line a1" d="M0,400 Q300,320 600,380 T1200,350" fill="none"/>
-          <path class="a-line a2" d="M0,450 Q350,380 700,430 T1200,400" fill="none"/>
-          <path class="a-line a3" d="M0,500 Q280,440 650,480 T1200,460" fill="none"/>
-        </svg>
-      </div>
+    <div class="app-shell">
 
-      <!-- Top bar -->
-      <header class="topbar">
-        <div class="topbar-left">
-          <div class="logo-sm">
-            <svg viewBox="0 0 32 32" fill="none">
-              <circle cx="16" cy="16" r="12" stroke="url(#tg)" stroke-width="1.2" opacity="0.5"/>
-              <circle cx="16" cy="16" r="5" fill="url(#tg)"/>
-              <defs>
-                <linearGradient id="tg" x1="0" y1="0" x2="32" y2="32">
-                  <stop offset="0%" stop-color="#00e88f"/>
-                  <stop offset="100%" stop-color="#00b4d8"/>
-                </linearGradient>
-              </defs>
+      <!-- ── Navbar ── -->
+      <nav class="navbar">
+        <div class="nav-brand">
+          <div class="nav-logo">
+            <svg viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="#007AFF"/>
+              <path d="M9 17l4.5 4.5L23 12" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="16" cy="8" r="1.5" fill="rgba(255,255,255,0.7)"/>
             </svg>
           </div>
-          <span class="topbar-title">Carbon Calculator</span>
+          <span class="nav-title">CarbonTrack</span>
         </div>
-        <div class="topbar-right">
-          <div class="user-badge">
-            <div class="user-avatar">{{ currentUser?.username?.charAt(0)?.toUpperCase() || 'U' }}</div>
+        <div class="nav-right">
+          <div class="nav-user">
+            <div class="user-avatar">{{ currentUser?.username?.charAt(0)?.toUpperCase() }}</div>
             <span class="user-name">{{ currentUser?.username }}</span>
           </div>
-          <button class="btn-logout" (click)="logout()">
-            <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
-              <path fill-rule="evenodd" d="M3 4.25A2.25 2.25 0 015.25 2h5.5A2.25 2.25 0 0113 4.25v2a.75.75 0 01-1.5 0v-2a.75.75 0 00-.75-.75h-5.5a.75.75 0 00-.75.75v11.5c0 .414.336.75.75.75h5.5a.75.75 0 00.75-.75v-2a.75.75 0 011.5 0v2A2.25 2.25 0 0110.75 18h-5.5A2.25 2.25 0 013 15.75V4.25z" clip-rule="evenodd"/>
-              <path fill-rule="evenodd" d="M19 10a.75.75 0 00-.75-.75H8.704l1.048-.943a.75.75 0 10-1.004-1.114l-2.5 2.25a.75.75 0 000 1.114l2.5 2.25a.75.75 0 101.004-1.114l-1.048-.943h9.546A.75.75 0 0019 10z" clip-rule="evenodd"/>
+          <button (click)="logout()" class="btn-logout" aria-label="Déconnexion">
+            <svg viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M3 5a2 2 0 012-2h6a2 2 0 012 2v1a1 1 0 11-2 0V5H5v10h6v-1a1 1 0 112 0v1a2 2 0 01-2 2H5a2 2 0 01-2-2V5zm11.707 5.707a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L11.586 9H7a1 1 0 100 2h4.586l-1.293 1.293a1 1 0 101.414 1.414l3-3z" clip-rule="evenodd"/>
             </svg>
-            Quitter
+            <span>Déconnexion</span>
           </button>
         </div>
-      </header>
+      </nav>
 
-      <!-- Main content -->
+      <!-- ── Main ── -->
       <main class="main">
-        <!-- Page header -->
-        <div class="page-head">
-          <div>
-            <h1 class="page-title">Tableau de bord</h1>
-            <p class="page-sub">Vue d'ensemble de l'empreinte carbone de vos sites</p>
-          </div>
-          <button class="btn-add" (click)="showSiteForm()">
-            <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
-              <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z"/>
-            </svg>
-            Nouveau site
-          </button>
-        </div>
+        <div class="container">
 
-        <!-- KPI row -->
-        <div class="kpi-row">
-          <div class="kpi" *ngFor="let k of kpis; let i = index"
-               [style.animation-delay]="(i * 0.08) + 's'">
-            <div class="kpi-top">
-              <span class="kpi-label">{{ k.label }}</span>
-              <div class="kpi-badge" [ngClass]="k.color">
-                <svg *ngIf="k.icon === 'sites'" viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
-                  <path fill-rule="evenodd" d="M4 16.5v-13h-.25a.75.75 0 010-1.5h12.5a.75.75 0 010 1.5H16v13h.25a.75.75 0 010 1.5H3.75a.75.75 0 010-1.5H4zm3-11a.75.75 0 01.75-.75h4.5a.75.75 0 010 1.5h-4.5A.75.75 0 017 5.5zm.75 2.25a.75.75 0 000 1.5h4.5a.75.75 0 000-1.5h-4.5zM7 11a.75.75 0 01.75-.75h4.5a.75.75 0 010 1.5h-4.5A.75.75 0 017 11zm1.5 2.25a.75.75 0 000 1.5h3a.75.75 0 000-1.5h-3z" clip-rule="evenodd"/>
-                </svg>
-                <svg *ngIf="k.icon === 'co2'" viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
-                  <path d="M10 2a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 2zm0 13a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 15zm-7.25-4.25a.75.75 0 000-1.5h-1.5a.75.75 0 000 1.5h1.5zm17 0a.75.75 0 000-1.5h-1.5a.75.75 0 000 1.5h1.5z"/>
-                  <path fill-rule="evenodd" d="M10 5a5 5 0 100 10 5 5 0 000-10zm-3 5a3 3 0 116 0 3 3 0 01-6 0z" clip-rule="evenodd"/>
-                </svg>
-                <svg *ngIf="k.icon === 'avg'" viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
-                  <path fill-rule="evenodd" d="M12.577 4.878a.75.75 0 01-.919.53l-1.36-.34a.75.75 0 01.388-1.448l1.36.34a.75.75 0 01.53.918zM7.5 10.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5zm5 5a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM16.5 4.5l-13 13" clip-rule="evenodd"/>
-                </svg>
-                <svg *ngIf="k.icon === 'm2'" viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
-                  <path fill-rule="evenodd" d="M9.674 2.075a.75.75 0 01.652 0l7.25 3.5A.75.75 0 0117 6.75v7.5a.75.75 0 01-.576.726l-7.25 2A.75.75 0 018.5 16.25v-7.5a.75.75 0 01.576-.726l7.25-2a.75.75 0 01.348 1.46L10 9.388v6.22l6-1.655V7.19l-6.326-3.054z" clip-rule="evenodd"/>
+          <!-- Page header -->
+          <header class="page-header">
+            <div>
+              <h1 class="page-title">Tableau de bord</h1>
+              <p class="page-subtitle">Suivi de l'empreinte carbone de vos sites</p>
+            </div>
+            <button (click)="showSiteForm()" class="btn-primary">
+              <svg viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
+              </svg>
+              Nouveau site
+            </button>
+          </header>
+
+          <!-- ── Search & sort ── -->
+          <div class="search-bar" *ngIf="sites.length > 0">
+            <div class="search-field">
+              <span class="search-icon">
+                <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
+              </span>
+              <input type="search" placeholder="Rechercher un site, une ville…" [(ngModel)]="searchQuery" name="search"/>
+              <button *ngIf="searchQuery" (click)="searchQuery = ''" class="search-clear" type="button" aria-label="Effacer">✕</button>
+            </div>
+            <div class="sort-group" role="group" aria-label="Trier par">
+              <button class="sort-btn" [class.active]="sortBy === 'name'"    (click)="sortBy = 'name'"      type="button">Nom</button>
+              <button class="sort-btn" [class.active]="sortBy === 'footprint'" (click)="sortBy = 'footprint'" type="button">CO₂ ↓</button>
+              <button class="sort-btn" [class.active]="sortBy === 'surface'"  (click)="sortBy = 'surface'"  type="button">Surface ↓</button>
+            </div>
+          </div>
+
+          <!-- ── KPI Grid ── -->
+          <section class="kpi-grid" aria-label="Indicateurs clés">
+
+            <div class="kpi-card kpi-blue">
+              <div class="kpi-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
                 </svg>
               </div>
-            </div>
-            <span class="kpi-value">{{ k.value }}</span>
-            <span class="kpi-unit">{{ k.unit }}</span>
-          </div>
-        </div>
-
-        <!-- Charts section -->
-        <div class="charts-row">
-          <div class="card chart-card">
-            <div class="card-head">
-              <h3>Repartition des emissions</h3>
-              <span class="card-tag">Construction vs Exploitation</span>
-            </div>
-            <div class="chart-wrap">
-              <canvas #pieChart></canvas>
-            </div>
-          </div>
-
-          <div class="card chart-card">
-            <div class="card-head">
-              <h3>Empreinte par site</h3>
-              <span class="card-tag">CO&#8322; total (kg)</span>
-            </div>
-            <div class="chart-wrap">
-              <canvas #barChart></canvas>
-            </div>
-          </div>
-        </div>
-
-        <!-- Sites section -->
-        <div class="sites-section">
-          <div class="section-head">
-            <h3>Mes sites <span class="count-badge">{{ sites.length }}</span></h3>
-          </div>
-
-          <div class="sites-grid" *ngIf="sites.length > 0">
-            <div class="site-card" *ngFor="let site of sites; let i = index"
-                 [style.animation-delay]="(i * 0.06) + 's'">
-              <div class="site-top">
-                <div>
-                  <h4 class="site-name">{{ site.name }}</h4>
-                  <p class="site-loc">{{ site.location || 'Localisation non renseignee' }}</p>
-                </div>
-                <div class="site-actions">
-                  <button class="action-btn" (click)="editSite(site)" title="Modifier">
-                    <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15">
-                      <path d="M2.695 14.763l-1.262 3.154a.5.5 0 00.65.65l3.155-1.262a4 4 0 001.343-.885L17.5 5.5a2.121 2.121 0 00-3-3L3.58 13.42a4 4 0 00-.885 1.343z"/>
-                    </svg>
-                  </button>
-                  <button class="action-btn danger" (click)="deleteSite(site.id!)" title="Supprimer">
-                    <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15">
-                      <path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.519.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 01.7.797l-.5 6a.75.75 0 01-1.497-.124l.5-6a.75.75 0 01.797-.672zm3.538.796a.75.75 0 00-1.497-.124l-.5 6a.75.75 0 001.497.124l.5-6z" clip-rule="evenodd"/>
-                    </svg>
-                  </button>
-                </div>
+              <div class="kpi-body">
+                <div class="kpi-value">{{ stats?.totalSites ?? 0 }}</div>
+                <div class="kpi-label">Sites enregistrés</div>
               </div>
+            </div>
 
-              <div class="site-metrics">
-                <div class="metric">
-                  <span class="metric-val">{{ formatNumber(site.totalSurface) }}</span>
-                  <span class="metric-lbl">m&#178; surface</span>
-                </div>
-                <div class="metric-sep"></div>
-                <div class="metric">
-                  <span class="metric-val accent">{{ formatNumber(site.totalFootprint) }}</span>
-                  <span class="metric-lbl">kg CO&#8322;</span>
-                </div>
-                <div class="metric-sep"></div>
-                <div class="metric">
-                  <span class="metric-val">{{ formatNumber(site.footprintPerM2) }}</span>
-                  <span class="metric-lbl">kg/m&#178;</span>
-                </div>
+            <div class="kpi-card kpi-green">
+              <div class="kpi-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
               </div>
+              <div class="kpi-body">
+                <div class="kpi-value">{{ formatTonnes(stats?.totalFootprint) }}</div>
+                <div class="kpi-label">t CO₂ total</div>
+              </div>
+            </div>
 
-              <div class="site-bar-wrap">
-                <div class="site-bar">
-                  <div class="site-bar-fill construction"
-                       [style.width.%]="getConstructionPct(site)"
-                       title="Construction"></div>
-                  <div class="site-bar-fill operational"
-                       [style.width.%]="getOperationalPct(site)"
-                       title="Exploitation"></div>
-                </div>
-                <div class="site-bar-legend">
-                  <span><i class="dot dot-c"></i> Construction</span>
-                  <span><i class="dot dot-o"></i> Exploitation</span>
-                </div>
+            <div class="kpi-card kpi-orange">
+              <div class="kpi-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+              </div>
+              <div class="kpi-body">
+                <div class="kpi-value">{{ formatTonnes(stats?.averageFootprint) }}</div>
+                <div class="kpi-label">t CO₂ moyen / site</div>
+              </div>
+            </div>
+
+            <div class="kpi-card kpi-purple">
+              <div class="kpi-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
+                </svg>
+              </div>
+              <div class="kpi-body">
+                <div class="kpi-value">{{ formatKgM2(stats?.averageFootprintPerM2) }}</div>
+                <div class="kpi-label">kg CO₂ / m² moyen</div>
+              </div>
+            </div>
+
+          </section>
+
+          <!-- ── Carbon equivalences ── -->
+          <div class="equiv-strip" *ngIf="(stats?.totalFootprint ?? 0) > 0">
+            <div class="equiv-card">
+              <span class="equiv-icon">✈️</span>
+              <div class="equiv-body">
+                <div class="equiv-value">{{ flightsEquiv }}</div>
+                <div class="equiv-label">vols Paris–New York</div>
+              </div>
+            </div>
+            <div class="equiv-card">
+              <span class="equiv-icon">🚗</span>
+              <div class="equiv-body">
+                <div class="equiv-value">{{ carsEquiv }}</div>
+                <div class="equiv-label">voitures roulant 1 an</div>
+              </div>
+            </div>
+            <div class="equiv-card">
+              <span class="equiv-icon">🌳</span>
+              <div class="equiv-body">
+                <div class="equiv-value">{{ treesEquiv }}</div>
+                <div class="equiv-label">arbres à planter pour compenser</div>
+              </div>
+            </div>
+            <div class="equiv-card">
+              <span class="equiv-icon">🏠</span>
+              <div class="equiv-body">
+                <div class="equiv-value">{{ homesEquiv }}</div>
+                <div class="equiv-label">foyers alimentés 1 an</div>
               </div>
             </div>
           </div>
 
-          <div class="empty-state" *ngIf="sites.length === 0">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" width="48" height="48">
-              <path d="M12 3v1m0 16v1m-8-9H3m18 0h-1m-2.636-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707"/>
-              <circle cx="12" cy="12" r="4"/>
-            </svg>
-            <p>Aucun site enregistre</p>
-            <button class="btn-add sm" (click)="showSiteForm()">Ajouter un site</button>
-          </div>
+          <!-- ── Charts ── -->
+          <section class="chart-grid" aria-label="Graphiques">
+
+            <div class="chart-card" [class.chart-empty]="sites.length === 0">
+              <div class="chart-header">
+                <h2 class="chart-title">Construction vs Exploitation</h2>
+                <span class="chart-badge">Répartition</span>
+              </div>
+              <div class="chart-body">
+                <canvas #pieChart></canvas>
+                <p *ngIf="sites.length === 0" class="chart-placeholder">
+                  Ajoutez des sites pour voir la répartition
+                </p>
+              </div>
+            </div>
+
+            <div class="chart-card" [class.chart-empty]="sites.length === 0">
+              <div class="chart-header">
+                <h2 class="chart-title">Empreinte par site</h2>
+                <span class="chart-badge">t CO₂</span>
+              </div>
+              <div class="chart-body">
+                <canvas #barChart></canvas>
+                <p *ngIf="sites.length === 0" class="chart-placeholder">
+                  Ajoutez des sites pour voir les données
+                </p>
+              </div>
+            </div>
+
+          </section>
+
+          <!-- ── Sites ── -->
+          <section class="sites-section">
+            <div class="section-header">
+              <h2 class="section-title">Mes sites</h2>
+              <span class="site-count" *ngIf="sites.length > 0">{{ filteredSites.length }}/{{ sites.length }} site{{ sites.length > 1 ? 's' : '' }}</span>
+              <button *ngIf="sites.length > 0" (click)="exportCsv()" class="btn-export" type="button">
+                <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+                Exporter CSV
+              </button>
+            </div>
+
+            <!-- Empty state -->
+            <div *ngIf="sites.length === 0" class="empty-state">
+              <div class="empty-icon">
+                <svg viewBox="0 0 64 64" fill="none">
+                  <rect x="8" y="8" width="48" height="48" rx="12" fill="var(--bg-tertiary)"/>
+                  <path d="M32 20v24M20 32h24" stroke="var(--text-tertiary)" stroke-width="2.5" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <h3>Aucun site enregistré</h3>
+              <p>Commencez par ajouter votre premier site pour calculer son empreinte carbone.</p>
+              <button (click)="showSiteForm()" class="btn-primary">
+                <svg viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
+                </svg>
+                Ajouter un site
+              </button>
+            </div>
+
+            <!-- No results -->
+            <div *ngIf="sites.length > 0 && filteredSites.length === 0" class="no-results">
+              <strong>Aucun résultat pour « {{ searchQuery }} »</strong>
+              <p>Essayez un autre nom ou une autre localisation.</p>
+            </div>
+
+            <!-- Sites grid -->
+            <div *ngIf="filteredSites.length > 0" class="sites-grid">
+              <div *ngFor="let site of filteredSites; let i = index" class="site-card"
+                   [style.animation-delay]="(i * 60) + 'ms'">
+
+                <div class="site-card-top">
+                  <div class="site-info">
+                    <div class="site-name-row">
+                      <h3 class="site-name">{{ site.name }}</h3>
+                      <span class="score-badge" [style.background]="getCarbonScore(site).bg" [style.color]="getCarbonScore(site).fg">
+                        {{ getCarbonScore(site).grade }}
+                      </span>
+                    </div>
+                    <div class="site-location" *ngIf="site.location">
+                      <svg viewBox="0 0 16 16" fill="currentColor">
+                        <path fill-rule="evenodd" d="M8 0C4.686 0 2 2.686 2 6c0 4 6 10 6 10s6-6 6-10c0-3.314-2.686-6-6-6zm0 8.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z" clip-rule="evenodd"/>
+                      </svg>
+                      {{ site.location }}
+                    </div>
+                  </div>
+                  <div class="site-actions">
+                    <button (click)="editSite(site)" class="action-btn action-edit" aria-label="Modifier">
+                      <svg viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
+                      </svg>
+                    </button>
+                    <button (click)="requestDelete(site.id!)" class="action-btn action-delete" aria-label="Supprimer">
+                      <svg viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="site-stats">
+                  <div class="stat-item">
+                    <span class="stat-label">Surface</span>
+                    <span class="stat-val">{{ formatInt(site.totalSurface) }} m²</span>
+                  </div>
+                  <div class="stat-item">
+                    <span class="stat-label">CO₂ total</span>
+                    <span class="stat-val accent">{{ formatTonnes(site.totalFootprint) }} t</span>
+                  </div>
+                  <div class="stat-item">
+                    <span class="stat-label">CO₂ / m²</span>
+                    <span class="stat-val">{{ formatKgM2(site.footprintPerM2) }} kg</span>
+                  </div>
+                  <div class="stat-item" *ngIf="site.employees">
+                    <span class="stat-label">Employés</span>
+                    <span class="stat-val">{{ site.employees }}</span>
+                  </div>
+                </div>
+
+                <div class="footprint-bar" [title]="'CO₂ : ' + formatTonnes(site.totalFootprint) + ' t'">
+                  <div class="footprint-fill"
+                       [style.width]="getBarWidth(site) + '%'"
+                       [style.background]="getCarbonScore(site).bg">
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </section>
+
         </div>
       </main>
 
-      <!-- Modal -->
-      <div class="modal-overlay" *ngIf="showForm" (click)="closeForm()">
+      <!-- ── MODAL: Site form ── -->
+      <div *ngIf="showForm" class="modal-backdrop" (click)="closeForm()" role="dialog" aria-modal="true">
         <div class="modal" (click)="$event.stopPropagation()">
-          <div class="modal-head">
-            <h3>{{ editMode ? 'Modifier le site' : 'Nouveau site' }}</h3>
-            <button class="modal-close" (click)="closeForm()">
-              <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
-                <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z"/>
+
+          <div class="modal-header">
+            <h2 class="modal-title">{{ editMode ? 'Modifier le site' : 'Nouveau site' }}</h2>
+            <button class="modal-close" (click)="closeForm()" aria-label="Fermer">
+              <svg viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
               </svg>
             </button>
           </div>
 
           <form (ngSubmit)="saveSite()" class="modal-form">
+
             <div class="form-section">
-              <span class="section-label">Informations generales</span>
-              <div class="form-grid">
+              <h3 class="form-section-title">Informations générales</h3>
+              <div class="form-row">
                 <div class="form-field">
-                  <label>Nom du site *</label>
-                  <input [(ngModel)]="currentSite.name" name="name" required placeholder="Ex: Campus Rennes">
+                  <label class="form-label">Nom du site <span class="req">*</span></label>
+                  <input class="form-input" [(ngModel)]="currentSite.name" name="name" required placeholder="Ex: Tour Eiffel"/>
                 </div>
                 <div class="form-field">
-                  <label>Localisation</label>
-                  <input [(ngModel)]="currentSite.location" name="location" placeholder="Ville, Pays">
-                </div>
-              </div>
-              <div class="form-grid">
-                <div class="form-field">
-                  <label>Surface totale (m&#178;) *</label>
-                  <input type="number" [(ngModel)]="currentSite.totalSurface" name="surface" required placeholder="0">
-                </div>
-                <div class="form-field">
-                  <label>Conso. energetique (MWh/an) *</label>
-                  <input type="number" [(ngModel)]="currentSite.energyConsumption" name="energy" required placeholder="0">
+                  <label class="form-label">Localisation</label>
+                  <input class="form-input" [(ngModel)]="currentSite.location" name="location" placeholder="Ex: Paris, France"/>
                 </div>
               </div>
-              <div class="form-grid">
+              <div class="form-row">
                 <div class="form-field">
-                  <label>Employes</label>
-                  <input type="number" [(ngModel)]="currentSite.employees" name="employees" placeholder="0">
+                  <label class="form-label">Surface totale (m²) <span class="req">*</span></label>
+                  <input class="form-input" type="number" [(ngModel)]="currentSite.totalSurface" name="surface" required placeholder="0" min="0"/>
                 </div>
                 <div class="form-field">
-                  <label>Places parking</label>
-                  <input type="number" [(ngModel)]="currentSite.parkingPlaces" name="parking" placeholder="0">
+                  <label class="form-label">Nombre d'employés</label>
+                  <input class="form-input" type="number" [(ngModel)]="currentSite.employees" name="employees" placeholder="0" min="0"/>
                 </div>
               </div>
             </div>
 
             <div class="form-section">
-              <span class="section-label">Materiaux de construction (tonnes)</span>
-              <div class="form-grid cols-4">
+              <h3 class="form-section-title">Énergie &amp; Transport</h3>
+              <div class="form-row">
                 <div class="form-field">
-                  <label>Beton</label>
-                  <input type="number" [(ngModel)]="currentSite.concreteQuantity" name="concrete" placeholder="0">
+                  <label class="form-label">Consommation énergétique (MWh/an) <span class="req">*</span></label>
+                  <input class="form-input" type="number" [(ngModel)]="currentSite.energyConsumption" name="energy" required placeholder="0" min="0"/>
                 </div>
                 <div class="form-field">
-                  <label>Acier</label>
-                  <input type="number" [(ngModel)]="currentSite.steelQuantity" name="steel" placeholder="0">
-                </div>
-                <div class="form-field">
-                  <label>Verre</label>
-                  <input type="number" [(ngModel)]="currentSite.glassQuantity" name="glass" placeholder="0">
-                </div>
-                <div class="form-field">
-                  <label>Bois</label>
-                  <input type="number" [(ngModel)]="currentSite.woodQuantity" name="wood" placeholder="0">
+                  <label class="form-label">Places de parking</label>
+                  <input class="form-input" type="number" [(ngModel)]="currentSite.parkingPlaces" name="parking" placeholder="0" min="0"/>
                 </div>
               </div>
             </div>
 
-            <div class="modal-actions">
-              <button type="button" class="btn-cancel" (click)="closeForm()">Annuler</button>
-              <button type="submit" class="btn-save">
-                <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
-                  <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd"/>
-                </svg>
-                Enregistrer
+            <div class="form-section">
+              <h3 class="form-section-title">Matériaux de construction (tonnes)</h3>
+              <div class="form-row form-row-4">
+                <div class="form-field">
+                  <label class="form-label">Béton</label>
+                  <input class="form-input" type="number" [(ngModel)]="currentSite.concreteQuantity" name="concrete" placeholder="0" min="0"/>
+                </div>
+                <div class="form-field">
+                  <label class="form-label">Acier</label>
+                  <input class="form-input" type="number" [(ngModel)]="currentSite.steelQuantity" name="steel" placeholder="0" min="0"/>
+                </div>
+                <div class="form-field">
+                  <label class="form-label">Verre</label>
+                  <input class="form-input" type="number" [(ngModel)]="currentSite.glassQuantity" name="glass" placeholder="0" min="0"/>
+                </div>
+                <div class="form-field">
+                  <label class="form-label">Bois</label>
+                  <input class="form-input" type="number" [(ngModel)]="currentSite.woodQuantity" name="wood" placeholder="0" min="0"/>
+                </div>
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button type="button" (click)="closeForm()" class="btn-ghost">Annuler</button>
+              <button type="submit" class="btn-primary">
+                {{ editMode ? 'Enregistrer les modifications' : 'Créer le site' }}
               </button>
             </div>
+
           </form>
         </div>
       </div>
+
+      <!-- ── MODAL: Delete confirm ── -->
+      <div *ngIf="showDeleteConfirm" class="modal-backdrop" (click)="cancelDelete()" role="alertdialog" aria-modal="true">
+        <div class="modal modal-sm" (click)="$event.stopPropagation()">
+          <div class="confirm-icon-wrap">
+            <svg viewBox="0 0 48 48" fill="none">
+              <circle cx="24" cy="24" r="24" fill="rgba(255,59,48,0.12)"/>
+              <path d="M24 14v10M24 30v2" stroke="#FF3B30" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <h3 class="confirm-title">Supprimer ce site ?</h3>
+          <p class="confirm-body">Cette action est irréversible. Toutes les données associées à ce site seront définitivement supprimées.</p>
+          <div class="confirm-actions">
+            <button (click)="cancelDelete()" class="btn-ghost">Annuler</button>
+            <button (click)="confirmDelete()" class="btn-danger">Supprimer</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Toast ── -->
+      <div *ngIf="toast" class="toast" [class.toast-success]="toast.type === 'success'" [class.toast-error]="toast.type === 'error'" role="status">
+        <svg *ngIf="toast.type === 'success'" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+        </svg>
+        <svg *ngIf="toast.type === 'error'" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+        </svg>
+        {{ toast.message }}
+      </div>
+
     </div>
   `,
   styleUrls: ['./dashboard.component.scss']
 })
-export class DashboardComponent implements OnInit, AfterViewInit {
+export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('pieChart') pieCanvas!: ElementRef;
   @ViewChild('barChart') barCanvas!: ElementRef;
 
@@ -290,10 +424,16 @@ export class DashboardComponent implements OnInit, AfterViewInit {
   showForm = false;
   editMode = false;
   currentSite: any = {};
-  kpis: any[] = [];
+  showDeleteConfirm = false;
+  siteToDelete: number | null = null;
+  toast: { message: string; type: 'success' | 'error' } | null = null;
+  searchQuery = '';
+  sortBy: 'name' | 'footprint' | 'surface' = 'name';
 
-  private pieChart: any;
-  private barChart: any;
+  private pieChartInstance: any;
+  private barChartInstance: any;
+  private toastTimer: any;
+  private maxFootprint = 0;
 
   constructor(
     private siteService: SiteService,
@@ -305,75 +445,76 @@ export class DashboardComponent implements OnInit, AfterViewInit {
     });
   }
 
-  ngOnInit() {
+  ngOnInit(): void {
     this.loadData();
   }
 
-  ngAfterViewInit() {
-    setTimeout(() => this.initCharts(), 100);
+  ngAfterViewInit(): void {
+    setTimeout(() => this.initCharts(), 120);
   }
 
-  loadData() {
+  ngOnDestroy(): void {
+    clearTimeout(this.toastTimer);
+    this.pieChartInstance?.destroy();
+    this.barChartInstance?.destroy();
+  }
+
+  loadData(): void {
     this.siteService.getMySites().subscribe(sites => {
       this.sites = sites;
+      this.maxFootprint = Math.max(...sites.map(s => s.totalFootprint ?? 0), 1);
       this.updateCharts();
     });
-
     this.siteService.getStats().subscribe(stats => {
       this.stats = stats;
-      this.kpis = [
-        { label: 'Sites enregistres', value: stats?.totalSites || 0, unit: 'sites', icon: 'sites', color: 'green' },
-        { label: 'CO\u2082 total', value: this.formatNumber(stats?.totalFootprint), unit: 'tonnes', icon: 'co2', color: 'cyan' },
-        { label: 'CO\u2082 moyen / site', value: this.formatNumber(stats?.averageFootprint), unit: 'tonnes', icon: 'avg', color: 'green' },
-        { label: 'CO\u2082 moyen / m\u00B2', value: this.formatNumber(stats?.averageFootprintPerM2), unit: 'kg/m\u00B2', icon: 'm2', color: 'cyan' },
-      ];
     });
   }
 
-  initCharts() {
+  initCharts(): void {
     if (this.pieCanvas && this.barCanvas) {
       this.createPieChart();
       this.createBarChart();
     }
   }
 
-  createPieChart() {
-    const constructionTotal = this.sites.reduce((sum, s) => sum + (s.constructionFootprint || 0), 0);
-    const operationalTotal = this.sites.reduce((sum, s) => sum + (s.operationalFootprint || 0), 0);
+  private chartColors = {
+    blue:   '#007AFF',
+    green:  '#34C759',
+    orange: '#FF9F0A',
+    purple: '#AF52DE',
+    teal:   '#32ADE6',
+    red:    '#FF3B30',
+  };
 
-    const ctx = this.pieCanvas.nativeElement.getContext('2d');
-    const gradient1 = ctx.createLinearGradient(0, 0, 200, 200);
-    gradient1.addColorStop(0, '#00e88f');
-    gradient1.addColorStop(1, '#00b46e');
-    const gradient2 = ctx.createLinearGradient(0, 0, 200, 200);
-    gradient2.addColorStop(0, '#00b4d8');
-    gradient2.addColorStop(1, '#0090b0');
+  createPieChart(): void {
+    const construction = this.sites.reduce((s, x) => s + (x.constructionFootprint ?? 0), 0);
+    const exploit      = this.sites.reduce((s, x) => s + (x.operationalFootprint  ?? 0), 0);
+    const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const textColor = isDark ? '#8E8E93' : '#6E6E73';
 
-    this.pieChart = new Chart(this.pieCanvas.nativeElement, {
+    this.pieChartInstance = new Chart(this.pieCanvas.nativeElement, {
       type: 'doughnut',
       data: {
         labels: ['Construction', 'Exploitation'],
         datasets: [{
-          data: [constructionTotal, operationalTotal],
-          backgroundColor: [gradient1, gradient2],
-          borderColor: 'rgba(7, 11, 9, 0.8)',
-          borderWidth: 3,
-          hoverBorderColor: 'rgba(7, 11, 9, 1)',
+          data: [construction, exploit],
+          backgroundColor: [this.chartColors.blue, this.chartColors.green],
+          borderWidth: 0,
+          hoverOffset: 6,
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        cutout: '65%',
+        cutout: '62%',
         plugins: {
           legend: {
             position: 'bottom',
-            labels: {
-              color: 'rgba(240, 237, 232, 0.5)',
-              font: { family: 'Outfit', size: 12 },
-              padding: 20,
-              usePointStyle: true,
-              pointStyleWidth: 8,
+            labels: { color: textColor, padding: 16, font: { size: 13 }, usePointStyle: true, pointStyleWidth: 10 }
+          },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => ` ${ctx.label}: ${(ctx.raw as number / 1000).toFixed(1)} t CO₂`
             }
           }
         }
@@ -381,22 +522,19 @@ export class DashboardComponent implements OnInit, AfterViewInit {
     });
   }
 
-  createBarChart() {
-    const ctx = this.barCanvas.nativeElement.getContext('2d');
-    const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-    gradient.addColorStop(0, 'rgba(0, 232, 143, 0.8)');
-    gradient.addColorStop(1, 'rgba(0, 232, 143, 0.15)');
+  createBarChart(): void {
+    const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const gridColor = isDark ? 'rgba(84,84,88,0.3)' : 'rgba(60,60,67,0.1)';
+    const textColor = isDark ? '#8E8E93' : '#6E6E73';
 
-    this.barChart = new Chart(this.barCanvas.nativeElement, {
+    this.barChartInstance = new Chart(this.barCanvas.nativeElement, {
       type: 'bar',
       data: {
-        labels: this.sites.map(s => s.name.length > 15 ? s.name.substring(0, 15) + '...' : s.name),
+        labels: this.sites.map(s => s.name),
         datasets: [{
-          label: 'CO\u2082 total (kg)',
-          data: this.sites.map(s => s.totalFootprint || 0),
-          backgroundColor: gradient,
-          borderColor: '#00e88f',
-          borderWidth: 1,
+          label: 't CO₂',
+          data: this.sites.map(s => +((s.totalFootprint ?? 0) / 1000).toFixed(2)),
+          backgroundColor: this.chartColors.blue,
           borderRadius: 6,
           borderSkipped: false,
         }]
@@ -405,97 +543,190 @@ export class DashboardComponent implements OnInit, AfterViewInit {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { display: false }
+          legend: { display: false },
+          tooltip: { callbacks: { label: (ctx) => ` ${ctx.raw} t CO₂` } }
         },
         scales: {
+          x: {
+            ticks: { color: textColor, font: { size: 12 } },
+            grid:  { display: false },
+            border: { display: false }
+          },
           y: {
             beginAtZero: true,
-            grid: { color: 'rgba(255,255,255,0.04)' },
-            ticks: {
-              color: 'rgba(240,237,232,0.35)',
-              font: { family: 'Outfit', size: 11 }
-            },
-            border: { color: 'rgba(255,255,255,0.06)' }
-          },
-          x: {
-            grid: { display: false },
-            ticks: {
-              color: 'rgba(240,237,232,0.4)',
-              font: { family: 'Outfit', size: 11 }
-            },
-            border: { color: 'rgba(255,255,255,0.06)' }
+            ticks: { color: textColor, font: { size: 12 } },
+            grid:  { color: gridColor },
+            border: { display: false }
           }
         }
       }
     });
   }
 
-  updateCharts() {
-    if (this.pieChart) {
-      this.pieChart.destroy();
+  updateCharts(): void {
+    this.pieChartInstance?.destroy();
+    this.barChartInstance?.destroy();
+    if (this.pieCanvas && this.barCanvas) {
       this.createPieChart();
-    }
-    if (this.barChart) {
-      this.barChart.destroy();
       this.createBarChart();
     }
   }
 
-  getConstructionPct(site: Site): number {
-    const total = (site.constructionFootprint || 0) + (site.operationalFootprint || 0);
-    return total > 0 ? ((site.constructionFootprint || 0) / total) * 100 : 50;
-  }
-
-  getOperationalPct(site: Site): number {
-    return 100 - this.getConstructionPct(site);
-  }
-
-  showSiteForm() {
+  /* ── Site CRUD ── */
+  showSiteForm(): void {
     this.showForm = true;
     this.editMode = false;
     this.currentSite = {};
   }
 
-  editSite(site: Site) {
+  editSite(site: Site): void {
     this.showForm = true;
     this.editMode = true;
     this.currentSite = { ...site };
   }
 
-  closeForm() {
+  closeForm(): void {
     this.showForm = false;
     this.currentSite = {};
   }
 
-  saveSite() {
+  saveSite(): void {
     if (this.editMode) {
-      this.siteService.updateSite(this.currentSite.id, this.currentSite).subscribe(() => {
-        this.loadData();
-        this.closeForm();
+      this.siteService.updateSite(this.currentSite.id, this.currentSite).subscribe({
+        next: () => { this.loadData(); this.closeForm(); this.showToast('Site mis à jour avec succès'); },
+        error: ()  => this.showToast('Erreur lors de la mise à jour', 'error')
       });
     } else {
-      this.siteService.createSite(this.currentSite).subscribe(() => {
-        this.loadData();
-        this.closeForm();
+      this.siteService.createSite(this.currentSite).subscribe({
+        next: () => { this.loadData(); this.closeForm(); this.showToast('Site créé avec succès'); },
+        error: ()  => this.showToast('Erreur lors de la création', 'error')
       });
     }
   }
 
-  deleteSite(id: number) {
-    if (confirm('\u00CAtes-vous s\u00FBr de vouloir supprimer ce site ?')) {
-      this.siteService.deleteSite(id).subscribe(() => {
-        this.loadData();
+  requestDelete(id: number): void {
+    this.siteToDelete = id;
+    this.showDeleteConfirm = true;
+  }
+
+  cancelDelete(): void {
+    this.siteToDelete = null;
+    this.showDeleteConfirm = false;
+  }
+
+  confirmDelete(): void {
+    if (this.siteToDelete !== null) {
+      this.siteService.deleteSite(this.siteToDelete).subscribe({
+        next: () => { this.loadData(); this.showToast('Site supprimé'); },
+        error: ()  => this.showToast('Erreur lors de la suppression', 'error')
       });
+      this.cancelDelete();
     }
   }
 
-  formatNumber(num: any): string {
-    if (!num) return '0';
-    return (num / 1000).toFixed(2);
-  }
-
-  logout() {
+  logout(): void {
     this.authService.logout();
     this.router.navigate(['/login']);
   }
+
+  /* ── Helpers ── */
+  formatTonnes(n: any): string {
+    if (!n) return '0';
+    return (n / 1000).toLocaleString('fr-FR', { maximumFractionDigits: 1 });
+  }
+
+  formatKgM2(n: any): string {
+    if (!n) return '0';
+    return (n / 1000).toLocaleString('fr-FR', { maximumFractionDigits: 2 });
+  }
+
+  formatInt(n: any): string {
+    if (!n) return '0';
+    return Number(n).toLocaleString('fr-FR');
+  }
+
+  getCarbonScore(site: Site): { grade: string; bg: string; fg: string } {
+    const kgPerM2 = (site.footprintPerM2 ?? 0) / 1000;
+    if (kgPerM2 < 50)  return { grade: 'A', bg: 'rgba(52,199,89,0.15)',  fg: '#34C759' };
+    if (kgPerM2 < 100) return { grade: 'B', bg: 'rgba(48,209,88,0.12)',  fg: '#30D158' };
+    if (kgPerM2 < 200) return { grade: 'C', bg: 'rgba(255,159,10,0.15)', fg: '#FF9F0A' };
+    if (kgPerM2 < 300) return { grade: 'D', bg: 'rgba(255,107,0,0.15)',  fg: '#FF6B00' };
+    return                     { grade: 'E', bg: 'rgba(255,59,48,0.15)',  fg: '#FF3B30' };
+  }
+
+  getBarWidth(site: Site): number {
+    if (!this.maxFootprint) return 0;
+    return Math.min(100, ((site.totalFootprint ?? 0) / this.maxFootprint) * 100);
+  }
+
+  private showToast(message: string, type: 'success' | 'error' = 'success'): void {
+    this.toast = { message, type };
+    clearTimeout(this.toastTimer);
+    this.toastTimer = setTimeout(() => this.toast = null, 3200);
+  }
+
+  /* ── Computed: filtered + sorted ── */
+  get filteredSites(): Site[] {
+    const q = this.searchQuery.toLowerCase().trim();
+    return this.sites
+      .filter(s =>
+        !q ||
+        s.name.toLowerCase().includes(q) ||
+        (s.location ?? '').toLowerCase().includes(q)
+      )
+      .sort((a, b) => {
+        if (this.sortBy === 'footprint') return (b.totalFootprint ?? 0) - (a.totalFootprint ?? 0);
+        if (this.sortBy === 'surface')   return (b.totalSurface ?? 0) - (a.totalSurface ?? 0);
+        return a.name.localeCompare(b.name, 'fr');
+      });
+  }
+
+  /* ── Carbon equivalences ── */
+  get flightsEquiv(): string {
+    // avg 0.615 t CO₂ per Paris–NYC flight
+    const v = Math.round((this.stats?.totalFootprint ?? 0) / 1000 / 0.615);
+    return v.toLocaleString('fr-FR');
+  }
+  get carsEquiv(): string {
+    // avg 2.5 t CO₂/year for a European car
+    const v = Math.round((this.stats?.totalFootprint ?? 0) / 1000 / 2.5);
+    return v.toLocaleString('fr-FR');
+  }
+  get treesEquiv(): string {
+    // avg tree absorbs 25 kg CO₂/year
+    const v = Math.round((this.stats?.totalFootprint ?? 0) / 1000 / 0.025);
+    return v.toLocaleString('fr-FR');
+  }
+  get homesEquiv(): string {
+    // avg French home: ~4.7 t CO₂/year
+    const v = Math.round((this.stats?.totalFootprint ?? 0) / 1000 / 4.7);
+    return v.toLocaleString('fr-FR');
+  }
+
+  /* ── Export CSV ── */
+  exportCsv(): void {
+    const headers = ['Nom', 'Localisation', 'Surface (m²)', 'CO₂ total (t)', 'CO₂/m² (kg)', 'Employés', 'Construction (t)', 'Exploitation (t)'];
+    const rows = this.sites.map(s => [
+      s.name,
+      s.location ?? '',
+      s.totalSurface ?? 0,
+      ((s.totalFootprint ?? 0) / 1000).toFixed(2),
+      ((s.footprintPerM2 ?? 0) / 1000).toFixed(3),
+      s.employees ?? '',
+      ((s.constructionFootprint ?? 0) / 1000).toFixed(2),
+      ((s.operationalFootprint  ?? 0) / 1000).toFixed(2),
+    ]);
+    const csv = [headers, ...rows]
+      .map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `carbontrack-sites-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    this.showToast('Export CSV téléchargé');
+  }
 }
+
