@@ -31,6 +31,12 @@ Chart.register(...registerables);
           <span class="nav-title">CarbonTrack</span>
         </div>
         <div class="nav-right">
+          <button *ngIf="canInstallPwa" (click)="installPwa()" class="btn-install" aria-label="Installer l'application">
+            <svg viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v7.586l2.293-2.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 10.586V3a1 1 0 011-1zm-6 13a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1z" clip-rule="evenodd"/>
+            </svg>
+            <span>Installer</span>
+          </button>
           <div class="nav-user">
             <div class="user-avatar">{{ currentUser?.username?.charAt(0)?.toUpperCase() }}</div>
             <span class="user-name">{{ currentUser?.username }}</span>
@@ -61,6 +67,31 @@ Chart.register(...registerables);
               Nouveau site
             </button>
           </header>
+
+          <section class="app-banner" *ngIf="canInstallPwa || showIosInstallHint || !isOnline">
+            <div class="app-banner-copy">
+              <span class="app-banner-kicker">{{ isOnline ? 'Mode application' : 'Connexion perdue' }}</span>
+              <h2>{{ isOnline ? 'Installez CarbonTrack sur votre mobile' : 'Vous êtes hors ligne' }}</h2>
+              <p>
+                {{ isOnline
+                  ? (showIosInstallHint
+                    ? 'Sur iPhone ou iPad, utilisez le bouton Partager puis "Sur l’écran d’accueil" pour installer l’application.'
+                    : 'Accédez plus vite au tableau de bord, profitez d’une interface plein écran et gardez en cache les ressources principales.')
+                  : 'Les écrans déjà visités restent disponibles. Reconnectez-vous pour synchroniser les données et l’API Sirene.' }}
+              </p>
+            </div>
+            <div class="app-banner-actions">
+              <button *ngIf="canInstallPwa" (click)="installPwa()" class="btn-primary" type="button">
+                Installer l’app
+              </button>
+              <button *ngIf="showIosInstallHint" (click)="showInstallInstructions()" class="btn-ghost btn-install-help" type="button">
+                Voir comment
+              </button>
+              <span class="network-pill" [class.network-pill-offline]="!isOnline">
+                {{ isOnline ? 'En ligne' : 'Hors ligne' }}
+              </span>
+            </div>
+          </section>
 
           <!-- ── Search & sort ── -->
           <div class="search-bar" *ngIf="sites.length > 0">
@@ -456,6 +487,11 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   toast: { message: string; type: 'success' | 'error' } | null = null;
   searchQuery = '';
   sortBy: 'name' | 'footprint' | 'surface' = 'name';
+  canInstallPwa = false;
+  isStandalone = false;
+  isOnline = navigator.onLine;
+  showIosInstallHint = false;
+  private deferredInstallPrompt: any = null;
 
   /* ── Sirene autocomplete ── */
   enrichSuggestions: EnterpriseResult[] = [];
@@ -481,6 +517,11 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.updateDisplayMode();
+    window.addEventListener('beforeinstallprompt', this.handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', this.handleAppInstalled);
+    window.addEventListener('online', this.handleConnectivityChange);
+    window.addEventListener('offline', this.handleConnectivityChange);
     this.loadData();
     this.enrichSub = this.nameSubject.pipe(
       debounceTime(300),
@@ -509,6 +550,10 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     this.pieChartInstance?.destroy();
     this.barChartInstance?.destroy();
     this.enrichSub?.unsubscribe();
+    window.removeEventListener('beforeinstallprompt', this.handleBeforeInstallPrompt);
+    window.removeEventListener('appinstalled', this.handleAppInstalled);
+    window.removeEventListener('online', this.handleConnectivityChange);
+    window.removeEventListener('offline', this.handleConnectivityChange);
   }
 
   loadData(): void {
@@ -639,6 +684,52 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   hideEnrichSuggest(): void {
     // Slight delay so mousedown on a suggestion fires before blur closes the list
     setTimeout(() => { this.showEnrichSuggest = false; }, 150);
+  }
+
+  private handleBeforeInstallPrompt = (event: Event): void => {
+    event.preventDefault();
+    this.deferredInstallPrompt = event;
+    this.updateDisplayMode();
+  };
+
+  private handleAppInstalled = (): void => {
+    this.deferredInstallPrompt = null;
+    this.updateDisplayMode();
+    this.showToast('CarbonTrack est installé sur cet appareil');
+  };
+
+  private handleConnectivityChange = (): void => {
+    this.isOnline = navigator.onLine;
+  };
+
+  private updateDisplayMode(): void {
+    const userAgent = window.navigator.userAgent.toLowerCase();
+    const isIos = /iphone|ipad|ipod/.test(userAgent);
+    const isSafari = isIos && /safari/.test(userAgent) && !/crios|fxios|edgios/.test(userAgent);
+    this.isStandalone = window.matchMedia('(display-mode: standalone)').matches
+      || (window.navigator as any).standalone === true;
+    this.canInstallPwa = !this.isStandalone && !!this.deferredInstallPrompt;
+    this.showIosInstallHint = !this.isStandalone && !this.canInstallPwa && isSafari;
+  }
+
+  async installPwa(): Promise<void> {
+    if (!this.deferredInstallPrompt) {
+      this.showToast('Utilisez le menu du navigateur pour installer l’application', 'error');
+      return;
+    }
+
+    this.deferredInstallPrompt.prompt();
+    const choice = await this.deferredInstallPrompt.userChoice;
+    this.deferredInstallPrompt = null;
+    this.updateDisplayMode();
+
+    if (choice?.outcome === 'accepted') {
+      this.showToast('Installation lancée');
+    }
+  }
+
+  showInstallInstructions(): void {
+    this.showToast('Safari > Partager > Sur l’écran d’accueil');
   }
 
   /* ── Site CRUD ── */
