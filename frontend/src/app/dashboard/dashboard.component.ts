@@ -683,7 +683,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
         labels: sorted.map(s => s.name),
         datasets: [{
           label: 'kg CO\u2082/m\u00b2',
-          data: sorted.map(s => +((s.footprintPerM2 ?? 0) / 1000).toFixed(2)),
+          data: sorted.map(s => +(s.footprintPerM2 ?? 0).toFixed(2)),
           backgroundColor: colors.map(c => c + '33'),
           borderColor: colors,
           borderWidth: 1.5,
@@ -947,7 +947,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
 
   formatKgM2(n: any): string {
     if (!n) return '0';
-    return (n / 1000).toLocaleString('fr-FR', { maximumFractionDigits: 2 });
+    return n.toLocaleString('fr-FR', { maximumFractionDigits: 2 });
   }
 
   formatInt(n: any): string {
@@ -1032,7 +1032,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       s.location ?? '',
       s.totalSurface ?? 0,
       ((s.totalFootprint ?? 0) / 1000).toFixed(2),
-      ((s.footprintPerM2 ?? 0) / 1000).toFixed(3),
+      (s.footprintPerM2 ?? 0).toFixed(2),
       s.employees ?? '',
       ((s.constructionFootprint ?? 0) / 1000).toFixed(2),
       ((s.operationalFootprint  ?? 0) / 1000).toFixed(2),
