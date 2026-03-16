@@ -430,6 +430,19 @@
 
 .chart-empty .chart-body { opacity: 0.4; }
 
+.chart-card--wide {
+  grid-column: span 2;
+
+  @media (max-width: 768px) {
+    grid-column: span 1;
+  }
+}
+
+.chart-body--tall {
+  height: 300px;
+  canvas { max-height: 300px !important; }
+}
+
 /* ── Sites section ── */
 .sites-section {
   animation: fadeInUp 0.4s ease both;

@@ -192,6 +192,45 @@ Chart.register(...registerables);
               </div>
             </div>
 
+            <div class="chart-card" [class.chart-empty]="sites.length === 0">
+              <div class="chart-header">
+                <h2 class="chart-title">Intensité carbone par site</h2>
+                <span class="chart-badge">kg CO₂ / m²</span>
+              </div>
+              <div class="chart-body">
+                <canvas #intensityChart></canvas>
+                <p *ngIf="sites.length === 0" class="chart-placeholder">
+                  Ajoutez des sites pour voir l'intensité carbone
+                </p>
+              </div>
+            </div>
+
+            <div class="chart-card chart-card--wide" [class.chart-empty]="sites.length === 0">
+              <div class="chart-header">
+                <h2 class="chart-title">Construction vs Exploitation par site</h2>
+                <span class="chart-badge">t CO₂ empilé</span>
+              </div>
+              <div class="chart-body chart-body--tall">
+                <canvas #stackedSitesChart></canvas>
+                <p *ngIf="sites.length === 0" class="chart-placeholder">
+                  Ajoutez des sites pour voir la répartition par site
+                </p>
+              </div>
+            </div>
+
+            <div class="chart-card" [class.chart-empty]="sites.length === 0">
+              <div class="chart-header">
+                <h2 class="chart-title">Matériaux de construction</h2>
+                <span class="chart-badge">tonnes</span>
+              </div>
+              <div class="chart-body">
+                <canvas #materialsChart></canvas>
+                <p *ngIf="sites.length === 0 || !hasMaterialData" class="chart-placeholder">
+                  Ajoutez des sites avec des données matériaux
+                </p>
+              </div>
+            </div>
+
           </section>
 
           <!-- ── Sites ── -->
@@ -444,6 +483,9 @@ Chart.register(...registerables);
 export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('pieChart') pieCanvas!: ElementRef;
   @ViewChild('barChart') barCanvas!: ElementRef;
+  @ViewChild('intensityChart') intensityCanvas!: ElementRef;
+  @ViewChild('stackedSitesChart') stackedSitesCanvas!: ElementRef;
+  @ViewChild('materialsChart') materialsCanvas!: ElementRef;
 
   sites: Site[] = [];
   stats: any = {};
@@ -466,6 +508,9 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private pieChartInstance: any;
   private barChartInstance: any;
+  private intensityChartInstance: any;
+  private stackedSitesChartInstance: any;
+  private materialsChartInstance: any;
   private toastTimer: any;
   private maxFootprint = 0;
 
@@ -508,6 +553,9 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     clearTimeout(this.toastTimer);
     this.pieChartInstance?.destroy();
     this.barChartInstance?.destroy();
+    this.intensityChartInstance?.destroy();
+    this.stackedSitesChartInstance?.destroy();
+    this.materialsChartInstance?.destroy();
     this.enrichSub?.unsubscribe();
   }
 
@@ -526,6 +574,9 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.pieCanvas && this.barCanvas) {
       this.createPieChart();
       this.createBarChart();
+      this.createIntensityChart();
+      this.createStackedSitesChart();
+      this.createMaterialsChart();
     }
   }
 
@@ -615,12 +666,202 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  createIntensityChart(): void {
+    if (!this.intensityCanvas) return;
+    const sorted = [...this.sites].sort((a, b) => (b.footprintPerM2 ?? 0) - (a.footprintPerM2 ?? 0));
+    const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const gridColor = isDark ? 'rgba(84,84,88,0.3)' : 'rgba(60,60,67,0.1)';
+    const textColor = isDark ? '#8E8E93' : '#6E6E73';
+    const colors = sorted.map(s => {
+      const score = this.getCarbonScore(s);
+      return score.fg;
+    });
+
+    this.intensityChartInstance = new Chart(this.intensityCanvas.nativeElement, {
+      type: 'bar',
+      data: {
+        labels: sorted.map(s => s.name),
+        datasets: [{
+          label: 'kg CO\u2082/m\u00b2',
+          data: sorted.map(s => +((s.footprintPerM2 ?? 0) / 1000).toFixed(2)),
+          backgroundColor: colors.map(c => c + '33'),
+          borderColor: colors,
+          borderWidth: 1.5,
+          borderRadius: 6,
+          borderSkipped: false,
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: (ctx) => ` ${ctx.raw} kg CO\u2082/m\u00b2` } }
+        },
+        scales: {
+          x: {
+            beginAtZero: true,
+            ticks: { color: textColor, font: { size: 12 } },
+            grid: { color: gridColor },
+            border: { display: false }
+          },
+          y: {
+            ticks: { color: textColor, font: { size: 12 } },
+            grid: { display: false },
+            border: { display: false }
+          }
+        }
+      }
+    });
+  }
+
+  createStackedSitesChart(): void {
+    if (!this.stackedSitesCanvas) return;
+    const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const gridColor = isDark ? 'rgba(84,84,88,0.3)' : 'rgba(60,60,67,0.1)';
+    const textColor = isDark ? '#8E8E93' : '#6E6E73';
+
+    this.stackedSitesChartInstance = new Chart(this.stackedSitesCanvas.nativeElement, {
+      type: 'bar',
+      data: {
+        labels: this.sites.map(s => s.name),
+        datasets: [
+          {
+            label: 'Construction',
+            data: this.sites.map(s => +((s.constructionFootprint ?? 0) / 1000).toFixed(2)),
+            backgroundColor: this.chartColors.blue,
+            stack: 'co2',
+            borderRadius: 0,
+            borderSkipped: false,
+          },
+          {
+            label: 'Exploitation',
+            data: this.sites.map(s => +((s.operationalFootprint ?? 0) / 1000).toFixed(2)),
+            backgroundColor: this.chartColors.green,
+            stack: 'co2',
+            borderRadius: 6,
+            borderSkipped: false,
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: true,
+            position: 'bottom',
+            labels: { color: textColor, padding: 16, font: { size: 13 }, usePointStyle: true, pointStyleWidth: 10 }
+          },
+          tooltip: { callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${ctx.raw} t CO\u2082` } }
+        },
+        scales: {
+          x: {
+            stacked: true,
+            ticks: { color: textColor, font: { size: 12 } },
+            grid: { display: false },
+            border: { display: false }
+          },
+          y: {
+            stacked: true,
+            beginAtZero: true,
+            ticks: { color: textColor, font: { size: 12 } },
+            grid: { color: gridColor },
+            border: { display: false }
+          }
+        }
+      }
+    });
+  }
+
+  createMaterialsChart(): void {
+    if (!this.materialsCanvas) return;
+    const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const gridColor = isDark ? 'rgba(84,84,88,0.3)' : 'rgba(60,60,67,0.1)';
+    const textColor = isDark ? '#8E8E93' : '#6E6E73';
+
+    this.materialsChartInstance = new Chart(this.materialsCanvas.nativeElement, {
+      type: 'bar',
+      data: {
+        labels: this.sites.map(s => s.name),
+        datasets: [
+          {
+            label: 'B\u00e9ton',
+            data: this.sites.map(s => s.concreteQuantity ?? 0),
+            backgroundColor: '#8E8E93',
+            stack: 'mat',
+            borderRadius: 0,
+            borderSkipped: false,
+          },
+          {
+            label: 'Acier',
+            data: this.sites.map(s => s.steelQuantity ?? 0),
+            backgroundColor: this.chartColors.orange,
+            stack: 'mat',
+            borderRadius: 0,
+            borderSkipped: false,
+          },
+          {
+            label: 'Verre',
+            data: this.sites.map(s => s.glassQuantity ?? 0),
+            backgroundColor: this.chartColors.teal,
+            stack: 'mat',
+            borderRadius: 0,
+            borderSkipped: false,
+          },
+          {
+            label: 'Bois',
+            data: this.sites.map(s => s.woodQuantity ?? 0),
+            backgroundColor: this.chartColors.green,
+            stack: 'mat',
+            borderRadius: 6,
+            borderSkipped: false,
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: true,
+            position: 'bottom',
+            labels: { color: textColor, padding: 12, font: { size: 12 }, usePointStyle: true, pointStyleWidth: 10 }
+          },
+          tooltip: { callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${ctx.raw} t` } }
+        },
+        scales: {
+          x: {
+            stacked: true,
+            ticks: { color: textColor, font: { size: 12 } },
+            grid: { display: false },
+            border: { display: false }
+          },
+          y: {
+            stacked: true,
+            beginAtZero: true,
+            ticks: { color: textColor, font: { size: 12 } },
+            grid: { color: gridColor },
+            border: { display: false }
+          }
+        }
+      }
+    });
+  }
+
   updateCharts(): void {
     this.pieChartInstance?.destroy();
     this.barChartInstance?.destroy();
+    this.intensityChartInstance?.destroy();
+    this.stackedSitesChartInstance?.destroy();
+    this.materialsChartInstance?.destroy();
     if (this.pieCanvas && this.barCanvas) {
       this.createPieChart();
       this.createBarChart();
+      this.createIntensityChart();
+      this.createStackedSitesChart();
+      this.createMaterialsChart();
     }
   }
 
@@ -770,6 +1011,15 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     // avg French home: ~4.7 t CO₂/year
     const v = Math.round((this.stats?.totalFootprint ?? 0) / 1000 / 4.7);
     return v.toLocaleString('fr-FR');
+  }
+
+  get hasMaterialData(): boolean {
+    return this.sites.some(s =>
+      (s.concreteQuantity ?? 0) > 0 ||
+      (s.steelQuantity ?? 0) > 0 ||
+      (s.glassQuantity ?? 0) > 0 ||
+      (s.woodQuantity ?? 0) > 0
+    );
   }
 
   /* ── Export CSV ── */
