@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
@@ -10,496 +10,528 @@ import { LoginRequest } from '../models/site.model';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="login-page">
-      <div class="login-left">
-        <div class="brand">
-          <div class="brand-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M12 3v1m0 16v1m-8-9H3m18 0h-1m-2.636-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707"/>
-              <circle cx="12" cy="12" r="4"/>
+    <div class="scene">
+      <!-- Animated topographic background -->
+      <div class="topo-bg">
+        <svg class="topo-lines" viewBox="0 0 800 600" preserveAspectRatio="none">
+          <path class="contour c1" d="M-50,300 Q150,220 300,280 T600,240 T900,300" fill="none"/>
+          <path class="contour c2" d="M-50,340 Q200,260 350,320 T650,270 T900,340" fill="none"/>
+          <path class="contour c3" d="M-50,380 Q180,310 320,360 T620,310 T900,380" fill="none"/>
+          <path class="contour c4" d="M-50,420 Q160,360 340,400 T640,350 T900,420" fill="none"/>
+          <path class="contour c5" d="M-50,260 Q200,180 360,230 T620,190 T900,260" fill="none"/>
+          <path class="contour c6" d="M-50,460 Q220,400 380,440 T660,390 T900,460" fill="none"/>
+          <path class="contour c7" d="M-50,220 Q170,150 330,190 T610,160 T900,220" fill="none"/>
+          <circle class="pulse-dot d1" cx="300" cy="280" r="3"/>
+          <circle class="pulse-dot d2" cx="550" cy="250" r="2.5"/>
+          <circle class="pulse-dot d3" cx="150" cy="350" r="2"/>
+          <circle class="pulse-dot d4" cx="680" cy="380" r="3"/>
+        </svg>
+        <div class="grain"></div>
+      </div>
+
+      <!-- Left branding panel -->
+      <div class="panel-left">
+        <div class="brand-block">
+          <div class="logo-mark">
+            <svg viewBox="0 0 48 48" fill="none">
+              <circle cx="24" cy="24" r="20" stroke="url(#grd)" stroke-width="1.5" opacity="0.4"/>
+              <circle cx="24" cy="24" r="13" stroke="url(#grd)" stroke-width="1.5" opacity="0.6"/>
+              <circle cx="24" cy="24" r="6" fill="url(#grd)"/>
+              <path d="M24 4 L24 8 M24 40 L24 44 M4 24 L8 24 M40 24 L44 24" stroke="url(#grd)" stroke-width="1" opacity="0.3"/>
+              <defs>
+                <linearGradient id="grd" x1="0" y1="0" x2="48" y2="48">
+                  <stop offset="0%" stop-color="#00e88f"/>
+                  <stop offset="100%" stop-color="#00b4d8"/>
+                </linearGradient>
+              </defs>
             </svg>
           </div>
-          <h1>Carbon Calculator</h1>
-          <p class="brand-tagline">Mesurez et optimisez l'empreinte carbone de vos sites</p>
+          <h1 class="brand-title">Carbon<br/>Calculator</h1>
+          <p class="brand-sub">Plateforme de mesure et d'optimisation<br/>de l'empreinte carbone de vos sites</p>
         </div>
-        <div class="features">
-          <div class="feature">
-            <span class="feature-icon">&#9889;</span>
-            <div>
-              <strong>Analyse en temps reel</strong>
-              <p>Suivez vos emissions de CO2 en direct</p>
-            </div>
+
+        <div class="stats-row">
+          <div class="stat-pill" *ngFor="let s of stats; let i = index"
+               [style.animation-delay]="(0.8 + i * 0.15) + 's'">
+            <span class="stat-value">{{ s.value }}</span>
+            <span class="stat-label">{{ s.label }}</span>
           </div>
-          <div class="feature">
-            <span class="feature-icon">&#9881;</span>
-            <div>
-              <strong>Recommandations</strong>
-              <p>Identifiez les leviers de reduction</p>
-            </div>
-          </div>
-          <div class="feature">
-            <span class="feature-icon">&#128202;</span>
-            <div>
-              <strong>Tableaux de bord</strong>
-              <p>Visualisez vos donnees carbone</p>
-            </div>
-          </div>
+        </div>
+
+        <div class="bottom-tag">
+          <span class="tag-dot"></span>
+          Hackathon #26 &mdash; Capgemini
         </div>
       </div>
 
-      <div class="login-right">
-        <div class="login-card">
-          <div class="card-header">
-            <h2>{{ isLoginMode ? 'Connexion' : 'Inscription' }}</h2>
-            <p class="card-subtitle">{{ isLoginMode ? 'Accedez a votre espace' : 'Creez votre compte' }}</p>
+      <!-- Right form panel -->
+      <div class="panel-right">
+        <div class="form-shell" [class.register-mode]="!isLoginMode">
+          <div class="form-header">
+            <div class="mode-tabs">
+              <button class="tab" [class.active]="isLoginMode" (click)="setMode(true)">Connexion</button>
+              <button class="tab" [class.active]="!isLoginMode" (click)="setMode(false)">Inscription</button>
+              <div class="tab-indicator" [class.right]="!isLoginMode"></div>
+            </div>
           </div>
 
-          <form (ngSubmit)="onSubmit()">
-            <div class="form-group">
-              <label for="username">Nom d'utilisateur</label>
-              <div class="input-wrapper">
-                <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
-                  <circle cx="12" cy="7" r="4"/>
-                </svg>
-                <input
-                  id="username"
-                  type="text"
-                  [(ngModel)]="username"
-                  name="username"
-                  placeholder="Entrez votre identifiant"
-                  required
-                  class="form-control">
-              </div>
+          <form (ngSubmit)="onSubmit()" class="auth-form">
+            <div class="field">
+              <label for="username">Identifiant</label>
+              <input
+                id="username"
+                type="text"
+                [(ngModel)]="username"
+                name="username"
+                placeholder="votre identifiant"
+                required
+                autocomplete="username">
             </div>
 
-            <div class="form-group" *ngIf="!isLoginMode">
-              <label for="email">Email</label>
-              <div class="input-wrapper">
-                <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="2" y="4" width="20" height="16" rx="2"/>
-                  <path d="M22 4l-10 8L2 4"/>
-                </svg>
-                <input
-                  id="email"
-                  type="email"
-                  [(ngModel)]="email"
-                  name="email"
-                  placeholder="votre@email.com"
-                  required
-                  class="form-control">
-              </div>
+            <div class="field" *ngIf="!isLoginMode" [@.disabled]="true">
+              <label for="email">Adresse email</label>
+              <input
+                id="email"
+                type="email"
+                [(ngModel)]="email"
+                name="email"
+                placeholder="nom@capgemini.com"
+                required
+                autocomplete="email">
             </div>
 
-            <div class="form-group">
+            <div class="field">
               <label for="password">Mot de passe</label>
-              <div class="input-wrapper">
-                <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                  <path d="M7 11V7a5 5 0 0110 0v4"/>
-                </svg>
-                <input
-                  id="password"
-                  type="password"
-                  [(ngModel)]="password"
-                  name="password"
-                  placeholder="Entrez votre mot de passe"
-                  required
-                  class="form-control">
-              </div>
+              <input
+                id="password"
+                type="password"
+                [(ngModel)]="password"
+                name="password"
+                placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"
+                required
+                autocomplete="current-password">
             </div>
 
-            <div class="error" *ngIf="errorMessage">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="error-icon">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="15" y1="9" x2="9" y2="15"/>
-                <line x1="9" y1="9" x2="15" y2="15"/>
+            <div class="msg msg-error" *ngIf="errorMessage">
+              <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd"/>
               </svg>
               {{ errorMessage }}
             </div>
 
-            <div class="success" *ngIf="successMessage">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="success-icon">
-                <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
-                <polyline points="22 4 12 14.01 9 11.01"/>
+            <div class="msg msg-success" *ngIf="successMessage">
+              <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/>
               </svg>
               {{ successMessage }}
             </div>
 
-            <button type="submit" class="btn-primary" [disabled]="loading">
-              <span *ngIf="loading" class="spinner"></span>
-              {{ loading ? '' : (isLoginMode ? 'Se connecter' : 'Creer mon compte') }}
+            <button type="submit" class="btn-submit" [disabled]="loading">
+              <span class="btn-text" *ngIf="!loading">
+                {{ isLoginMode ? 'Entrer' : 'Creer le compte' }}
+              </span>
+              <span class="btn-loader" *ngIf="loading"></span>
+              <svg class="btn-arrow" *ngIf="!loading" viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
+                <path fill-rule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638L11.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 11-1.04-1.08l3.158-2.96H3.75A.75.75 0 013 10z" clip-rule="evenodd"/>
+              </svg>
             </button>
           </form>
 
-          <div class="divider">
-            <span>ou</span>
-          </div>
-
-          <p class="toggle-mode">
-            {{ isLoginMode ? 'Pas encore de compte ?' : 'Deja un compte ?' }}
-            <a (click)="toggleMode()">
-              {{ isLoginMode ? 'Creer un compte' : 'Se connecter' }}
-            </a>
+          <p class="demo-hint" *ngIf="isLoginMode">
+            Compte demo : <code>demo</code> / <code>password</code>
           </p>
         </div>
       </div>
     </div>
   `,
   styles: [`
-    * { box-sizing: border-box; }
+    :host { display: block; height: 100vh; }
 
-    .login-page {
+    .scene {
       display: flex;
-      min-height: 100vh;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      height: 100%;
+      position: relative;
+      overflow: hidden;
+      background: #070b09;
     }
 
-    .login-left {
-      flex: 1;
-      background: linear-gradient(160deg, #0b3d2e 0%, #145a3e 40%, #1a7a52 100%);
-      color: white;
+    /* ── Topographic animated background ── */
+    .topo-bg {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .topo-lines {
+      width: 100%;
+      height: 100%;
+    }
+
+    .contour {
+      stroke-width: 0.8;
+      stroke: rgba(0, 232, 143, 0.08);
+      animation: drift 20s ease-in-out infinite alternate;
+    }
+    .c1 { animation-delay: 0s; }
+    .c2 { stroke: rgba(0, 180, 216, 0.07); animation-delay: -3s; animation-duration: 24s; }
+    .c3 { animation-delay: -6s; animation-duration: 22s; }
+    .c4 { stroke: rgba(0, 180, 216, 0.06); animation-delay: -9s; animation-duration: 26s; }
+    .c5 { animation-delay: -2s; animation-duration: 18s; }
+    .c6 { stroke: rgba(0, 232, 143, 0.05); animation-delay: -5s; animation-duration: 28s; }
+    .c7 { stroke: rgba(0, 180, 216, 0.06); animation-delay: -7s; animation-duration: 21s; }
+
+    @keyframes drift {
+      0% { transform: translateX(0) translateY(0); }
+      100% { transform: translateX(40px) translateY(-20px); }
+    }
+
+    .pulse-dot {
+      fill: #00e88f;
+      animation: pulse 3s ease-in-out infinite;
+    }
+    .d1 { animation-delay: 0s; }
+    .d2 { animation-delay: -1s; fill: #00b4d8; }
+    .d3 { animation-delay: -2s; }
+    .d4 { animation-delay: -0.5s; fill: #00b4d8; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.15; r: 2; }
+      50% { opacity: 0.7; r: 5; }
+    }
+
+    .grain {
+      position: absolute;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+      background-repeat: repeat;
+      background-size: 256px;
+    }
+
+    /* ── Left panel ── */
+    .panel-left {
+      flex: 1.1;
       display: flex;
       flex-direction: column;
       justify-content: center;
-      padding: 4rem;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .login-left::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      right: -20%;
-      width: 600px;
-      height: 600px;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.03);
-    }
-
-    .login-left::after {
-      content: '';
-      position: absolute;
-      bottom: -30%;
-      left: -10%;
-      width: 400px;
-      height: 400px;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.04);
-    }
-
-    .brand {
+      padding: 4rem 5rem;
       position: relative;
       z-index: 1;
+    }
+
+    .brand-block { margin-bottom: 3.5rem; }
+
+    .logo-mark {
+      width: 64px;
+      height: 64px;
+      margin-bottom: 2rem;
+      animation: fadeUp 0.6s ease-out both;
+    }
+
+    .logo-mark svg { width: 100%; height: 100%; }
+
+    .brand-title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 3.2rem;
+      line-height: 1.05;
+      letter-spacing: -2px;
+      color: #f0ede8;
+      margin-bottom: 1.25rem;
+      animation: fadeUp 0.6s ease-out 0.1s both;
+    }
+
+    .brand-sub {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 300;
+      font-size: 1.05rem;
+      line-height: 1.6;
+      color: rgba(240, 237, 232, 0.45);
+      animation: fadeUp 0.6s ease-out 0.2s both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Stats pills ── */
+    .stats-row {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
       margin-bottom: 3rem;
     }
 
-    .brand-icon {
-      width: 56px;
-      height: 56px;
-      background: rgba(255,255,255,0.15);
-      border-radius: 14px;
+    .stat-pill {
       display: flex;
       align-items: center;
-      justify-content: center;
-      margin-bottom: 1.5rem;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      border: 1px solid rgba(0, 232, 143, 0.12);
+      border-radius: 100px;
+      background: rgba(0, 232, 143, 0.04);
+      animation: fadeUp 0.5s ease-out both;
     }
 
-    .brand-icon svg {
-      width: 32px;
-      height: 32px;
-      color: #4ade80;
-    }
-
-    .brand h1 {
-      font-size: 2rem;
+    .stat-value {
+      font-family: 'Syne', sans-serif;
       font-weight: 700;
-      margin: 0 0 0.75rem;
-      letter-spacing: -0.5px;
+      font-size: 0.9rem;
+      color: #00e88f;
     }
 
-    .brand-tagline {
-      font-size: 1.1rem;
-      opacity: 0.8;
-      margin: 0;
-      line-height: 1.5;
+    .stat-label {
+      font-size: 0.78rem;
+      color: rgba(240, 237, 232, 0.35);
+      font-weight: 400;
     }
 
-    .features {
-      position: relative;
-      z-index: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 1.5rem;
-    }
-
-    .feature {
-      display: flex;
-      align-items: flex-start;
-      gap: 1rem;
-      padding: 1rem;
-      background: rgba(255,255,255,0.08);
-      border-radius: 12px;
-      backdrop-filter: blur(10px);
-    }
-
-    .feature-icon {
-      font-size: 1.5rem;
-      flex-shrink: 0;
-      width: 40px;
-      height: 40px;
+    .bottom-tag {
+      position: absolute;
+      bottom: 2.5rem;
+      left: 5rem;
       display: flex;
       align-items: center;
-      justify-content: center;
+      gap: 0.6rem;
+      font-size: 0.75rem;
+      color: rgba(240, 237, 232, 0.25);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      font-weight: 500;
     }
 
-    .feature strong {
-      display: block;
-      font-size: 0.95rem;
-      margin-bottom: 0.25rem;
+    .tag-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #00e88f;
+      animation: pulse 2s ease-in-out infinite;
     }
 
-    .feature p {
-      margin: 0;
-      font-size: 0.85rem;
-      opacity: 0.7;
-    }
-
-    .login-right {
-      flex: 1;
+    /* ── Right panel ── */
+    .panel-right {
+      flex: 0.9;
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 2rem;
-      background: #f8faf9;
-    }
-
-    .login-card {
-      width: 100%;
-      max-width: 420px;
-      background: white;
-      padding: 2.5rem;
-      border-radius: 16px;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.06);
-    }
-
-    .card-header {
-      margin-bottom: 2rem;
-    }
-
-    .card-header h2 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: #111;
-      margin: 0 0 0.5rem;
-    }
-
-    .card-subtitle {
-      color: #6b7280;
-      margin: 0;
-      font-size: 0.95rem;
-    }
-
-    .form-group {
-      margin-bottom: 1.25rem;
-    }
-
-    label {
-      display: block;
-      margin-bottom: 0.5rem;
-      color: #374151;
-      font-weight: 500;
-      font-size: 0.9rem;
-    }
-
-    .input-wrapper {
       position: relative;
+      z-index: 1;
     }
 
-    .input-icon {
-      position: absolute;
-      left: 12px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 18px;
-      height: 18px;
-      color: #9ca3af;
-      pointer-events: none;
-    }
-
-    .form-control {
+    .form-shell {
       width: 100%;
-      padding: 0.75rem 0.75rem 0.75rem 2.5rem;
-      border: 1.5px solid #e5e7eb;
-      border-radius: 10px;
-      font-size: 0.95rem;
-      background: #f9fafb;
-      transition: all 0.2s;
-      color: #111;
+      max-width: 400px;
+      background: rgba(16, 22, 18, 0.85);
+      backdrop-filter: blur(40px);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 20px;
+      padding: 2.5rem;
+      animation: fadeUp 0.6s ease-out 0.3s both;
     }
 
-    .form-control::placeholder {
-      color: #9ca3af;
+    /* ── Mode tabs ── */
+    .form-header { margin-bottom: 2rem; }
+
+    .mode-tabs {
+      display: flex;
+      position: relative;
+      background: rgba(255,255,255,0.04);
+      border-radius: 12px;
+      padding: 4px;
     }
 
-    .form-control:focus {
-      outline: none;
-      border-color: #1a7a52;
-      background: white;
-      box-shadow: 0 0 0 3px rgba(26, 122, 82, 0.1);
-    }
-
-    .btn-primary {
-      width: 100%;
-      padding: 0.85rem;
-      background: #1a7a52;
-      color: white;
+    .tab {
+      flex: 1;
+      padding: 0.65rem 0;
+      background: none;
       border: none;
-      border-radius: 10px;
-      font-size: 1rem;
-      font-weight: 600;
+      color: rgba(240, 237, 232, 0.4);
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 500;
       cursor: pointer;
-      transition: all 0.2s;
+      position: relative;
+      z-index: 1;
+      transition: color 0.3s;
+    }
+
+    .tab.active { color: #f0ede8; }
+
+    .tab-indicator {
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      width: calc(50% - 4px);
+      height: calc(100% - 8px);
+      background: rgba(0, 232, 143, 0.12);
+      border: 1px solid rgba(0, 232, 143, 0.15);
+      border-radius: 9px;
+      transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .tab-indicator.right {
+      transform: translateX(100%);
+    }
+
+    /* ── Form fields ── */
+    .auth-form { display: flex; flex-direction: column; gap: 1.25rem; }
+
+    .field label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: rgba(240, 237, 232, 0.4);
+      margin-bottom: 0.45rem;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+    }
+
+    .field input {
+      width: 100%;
+      padding: 0.8rem 1rem;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 11px;
+      color: #f0ede8;
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 400;
+      transition: all 0.25s;
+    }
+
+    .field input::placeholder {
+      color: rgba(240, 237, 232, 0.2);
+    }
+
+    .field input:focus {
+      outline: none;
+      border-color: rgba(0, 232, 143, 0.35);
+      background: rgba(0, 232, 143, 0.04);
+      box-shadow: 0 0 0 3px rgba(0, 232, 143, 0.06), inset 0 0 20px rgba(0, 232, 143, 0.02);
+    }
+
+    /* ── Messages ── */
+    .msg {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.7rem 1rem;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 400;
+    }
+
+    .msg-error {
+      color: #ff6b6b;
+      background: rgba(255, 107, 107, 0.08);
+      border: 1px solid rgba(255, 107, 107, 0.15);
+    }
+
+    .msg-success {
+      color: #00e88f;
+      background: rgba(0, 232, 143, 0.08);
+      border: 1px solid rgba(0, 232, 143, 0.15);
+    }
+
+    /* ── Submit button ── */
+    .btn-submit {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 0.5rem;
+      gap: 0.6rem;
+      width: 100%;
+      padding: 0.85rem 1.5rem;
       margin-top: 0.5rem;
+      background: linear-gradient(135deg, #00e88f 0%, #00b4d8 100%);
+      border: none;
+      border-radius: 12px;
+      color: #070b09;
+      font-family: 'Syne', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      cursor: pointer;
+      transition: all 0.25s;
+      position: relative;
+      overflow: hidden;
     }
 
-    .btn-primary:hover {
-      background: #145a3e;
+    .btn-submit::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 50%);
+      opacity: 0;
+      transition: opacity 0.25s;
+    }
+
+    .btn-submit:hover::before { opacity: 1; }
+
+    .btn-submit:hover {
       transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(26, 122, 82, 0.3);
+      box-shadow: 0 8px 30px rgba(0, 232, 143, 0.2), 0 2px 8px rgba(0, 232, 143, 0.15);
     }
 
-    .btn-primary:active {
-      transform: translateY(0);
-    }
+    .btn-submit:active { transform: translateY(0); }
 
-    .btn-primary:disabled {
-      opacity: 0.7;
+    .btn-submit:disabled {
+      opacity: 0.6;
       cursor: not-allowed;
       transform: none;
+      box-shadow: none;
     }
 
-    .spinner {
+    .btn-arrow { flex-shrink: 0; }
+
+    .btn-loader {
       width: 20px;
       height: 20px;
-      border: 2px solid rgba(255,255,255,0.3);
-      border-top-color: white;
+      border: 2.5px solid rgba(7, 11, 9, 0.2);
+      border-top-color: #070b09;
       border-radius: 50%;
-      animation: spin 0.6s linear infinite;
+      animation: spin 0.65s linear infinite;
     }
 
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-    .divider {
-      display: flex;
-      align-items: center;
-      margin: 1.5rem 0;
-      color: #9ca3af;
-      font-size: 0.85rem;
-    }
-
-    .divider::before,
-    .divider::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: #e5e7eb;
-    }
-
-    .divider span {
-      padding: 0 1rem;
-    }
-
-    .toggle-mode {
+    /* ── Demo hint ── */
+    .demo-hint {
       text-align: center;
-      color: #6b7280;
-      font-size: 0.9rem;
-      margin: 0;
+      margin-top: 1.5rem;
+      font-size: 0.8rem;
+      color: rgba(240, 237, 232, 0.25);
     }
 
-    .toggle-mode a {
-      color: #1a7a52;
-      cursor: pointer;
-      text-decoration: none;
-      font-weight: 600;
+    .demo-hint code {
+      display: inline-block;
+      padding: 0.15rem 0.45rem;
+      background: rgba(0, 232, 143, 0.08);
+      border: 1px solid rgba(0, 232, 143, 0.12);
+      border-radius: 5px;
+      color: #00e88f;
+      font-family: 'Outfit', monospace;
+      font-size: 0.78rem;
+      font-weight: 500;
     }
 
-    .toggle-mode a:hover {
-      text-decoration: underline;
-    }
-
-    .error {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      color: #dc2626;
-      margin-bottom: 1rem;
-      padding: 0.75rem 1rem;
-      background: #fef2f2;
-      border: 1px solid #fecaca;
-      border-radius: 10px;
-      font-size: 0.9rem;
-    }
-
-    .error-icon {
-      width: 18px;
-      height: 18px;
-      flex-shrink: 0;
-    }
-
-    .success {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      color: #16a34a;
-      margin-bottom: 1rem;
-      padding: 0.75rem 1rem;
-      background: #f0fdf4;
-      border: 1px solid #bbf7d0;
-      border-radius: 10px;
-      font-size: 0.9rem;
-    }
-
-    .success-icon {
-      width: 18px;
-      height: 18px;
-      flex-shrink: 0;
-    }
-
-    @media (max-width: 768px) {
-      .login-page {
-        flex-direction: column;
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .scene { flex-direction: column; }
+      .panel-left {
+        padding: 2rem 2rem 1.5rem;
+        flex: none;
       }
-
-      .login-left {
-        padding: 2rem;
-        min-height: auto;
-      }
-
-      .features {
-        display: none;
-      }
-
-      .login-right {
-        padding: 1.5rem;
-      }
-
-      .login-card {
-        box-shadow: none;
-        background: transparent;
-        padding: 1.5rem 0;
-      }
+      .brand-title { font-size: 2rem; }
+      .stats-row, .bottom-tag { display: none; }
+      .brand-block { margin-bottom: 0; }
+      .panel-right { flex: 1; padding: 1rem 1.5rem 2rem; }
+      .form-shell { max-width: 100%; }
     }
   `]
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit, OnDestroy {
   username = '';
   email = '';
   password = '';
@@ -508,15 +540,28 @@ export class LoginComponent {
   successMessage = '';
   loading = false;
 
+  stats = [
+    { value: '2.4t', label: 'CO\u2082 moyen/m\u00B2' },
+    { value: '47%', label: 'construction' },
+    { value: '53%', label: 'exploitation' },
+  ];
+
   constructor(
     private authService: AuthService,
     private router: Router
   ) {}
 
-  toggleMode() {
-    this.isLoginMode = !this.isLoginMode;
+  ngOnInit() {}
+  ngOnDestroy() {}
+
+  setMode(login: boolean) {
+    this.isLoginMode = login;
     this.errorMessage = '';
     this.successMessage = '';
+  }
+
+  toggleMode() {
+    this.setMode(!this.isLoginMode);
   }
 
   onSubmit() {
@@ -548,7 +593,7 @@ export class LoginComponent {
         next: () => {
           this.loading = false;
           this.isLoginMode = true;
-          this.successMessage = 'Inscription reussie ! Connectez-vous maintenant.';
+          this.successMessage = 'Compte cr\u00E9\u00E9 ! Connectez-vous maintenant.';
         },
         error: (err) => {
           this.loading = false;
