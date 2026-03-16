@@ -1,1 +1,147 @@
-/* You can add global styles to this file, and also import other style files */
+/* ─────────────────────────────────────────
+   CarbonTrack – Design System (Apple-inspired)
+   Light & Dark mode via prefers-color-scheme
+   ───────────────────────────────────────── */
+
+/* ── Tokens – Light (default) ── */
+:root {
+  /* Brand */
+  --color-blue:   #007AFF;
+  --color-green:  #34C759;
+  --color-orange: #FF9F0A;
+  --color-red:    #FF3B30;
+  --color-purple: #AF52DE;
+  --color-teal:   #32ADE6;
+  --color-indigo: #5856D6;
+
+  /* Surfaces */
+  --bg-primary:   #F2F2F7;
+  --bg-secondary: #FFFFFF;
+  --bg-tertiary:  #EBEBF0;
+  --bg-elevated:  #FFFFFF;
+  --bg-blur:      rgba(255, 255, 255, 0.78);
+  --bg-card:      #FFFFFF;
+  --bg-input:     rgba(120, 120, 128, 0.08);
+  --bg-input-focus: #FFFFFF;
+
+  /* Text */
+  --text-primary:   #000000;
+  --text-secondary: #6E6E73;
+  --text-tertiary:  #AEAEB2;
+
+  /* Borders */
+  --separator:        rgba(60,  60,  67,  0.18);
+  --separator-strong: rgba(60,  60,  67,  0.35);
+
+  /* Shadows */
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-sm: 0 1px 4px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.05);
+  --shadow-lg: 0 12px 28px rgba(0,0,0,0.10), 0 4px 8px rgba(0,0,0,0.06);
+  --shadow-xl: 0 24px 48px rgba(0,0,0,0.12), 0 8px 16px rgba(0,0,0,0.06);
+
+  /* Radius */
+  --r-xs:   6px;
+  --r-sm:   8px;
+  --r-md:   12px;
+  --r-lg:   16px;
+  --r-xl:   20px;
+  --r-2xl:  28px;
+  --r-full: 9999px;
+
+  /* Motion */
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out:    cubic-bezier(0, 0, 0.2, 1);
+  --dur-fast:    150ms;
+  --dur-base:    250ms;
+  --dur-slow:    400ms;
+}
+
+/* ── Tokens – Dark ── */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-primary:   #000000;
+    --bg-secondary: #1C1C1E;
+    --bg-tertiary:  #2C2C2E;
+    --bg-elevated:  #2C2C2E;
+    --bg-blur:      rgba(28, 28, 30, 0.82);
+    --bg-card:      #1C1C1E;
+    --bg-input:     rgba(118, 118, 128, 0.20);
+    --bg-input-focus: #2C2C2E;
+
+    --text-primary:   #FFFFFF;
+    --text-secondary: #8E8E93;
+    --text-tertiary:  #636366;
+
+    --separator:        rgba(84, 84, 88, 0.55);
+    --separator-strong: rgba(84, 84, 88, 0.80);
+
+    --shadow-xs: 0 1px 2px rgba(0,0,0,0.40);
+    --shadow-sm: 0 1px 4px rgba(0,0,0,0.40), 0 1px 2px rgba(0,0,0,0.24);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.40), 0 2px 4px rgba(0,0,0,0.24);
+    --shadow-lg: 0 12px 28px rgba(0,0,0,0.50), 0 4px 8px rgba(0,0,0,0.30);
+    --shadow-xl: 0 24px 48px rgba(0,0,0,0.60), 0 8px 16px rgba(0,0,0,0.40);
+  }
+}
+
+/* ── Reset ── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  color-scheme: light dark;
+  -webkit-font-smoothing:  antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display',
+               'Helvetica Neue', 'Inter', Arial, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.5;
+  transition:
+    background-color var(--dur-base) var(--ease-smooth),
+    color            var(--dur-base) var(--ease-smooth);
+}
+
+/* ── Scrollbar (WebKit) ── */
+::-webkit-scrollbar        { width: 5px; height: 5px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  {
+  background: var(--separator-strong);
+  border-radius: var(--r-full);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--text-tertiary); }
+
+/* ── Selection ── */
+::selection {
+  background: rgba(0, 122, 255, 0.18);
+  color: var(--text-primary);
+}
+
+/* ── Utility animations ── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
