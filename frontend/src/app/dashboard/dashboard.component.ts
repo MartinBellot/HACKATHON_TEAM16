@@ -2,8 +2,11 @@ import { Component, OnInit, AfterViewInit, ElementRef, ViewChild, OnDestroy } fr
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { Chart, registerables } from 'chart.js';
+import { Subject, Subscription, of } from 'rxjs';
+import { debounceTime, switchMap } from 'rxjs/operators';
 import { SiteService } from '../services/site.service';
 import { AuthService } from '../services/auth.service';
+import { SiteEnrichService, EnterpriseResult } from '../services/site-enrich.service';
 import { Site } from '../models/site.model';
 import { FormsModule } from '@angular/forms';
 
@@ -310,12 +313,36 @@ Chart.register(...registerables);
 
           <form (ngSubmit)="saveSite()" class="modal-form">
 
+            <!-- Sirene hint banner (new site only) -->
+            <div *ngIf="!editMode" class="enrich-banner">
+              <svg viewBox="0 0 20 20" fill="currentColor" class="enrich-banner-icon">
+                <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>
+              </svg>
+              Tapez un nom d'entreprise — les champs sont pré-remplis automatiquement via le registre <strong>Sirene (INSEE)</strong>.
+            </div>
+
             <div class="form-section">
               <h3 class="form-section-title">Informations générales</h3>
               <div class="form-row">
-                <div class="form-field">
+                <div class="form-field enrich-field">
                   <label class="form-label">Nom du site <span class="req">*</span></label>
-                  <input class="form-input" [(ngModel)]="currentSite.name" name="name" required placeholder="Ex: Tour Eiffel"/>
+                  <div class="enrich-input-wrap">
+                    <input class="form-input" [(ngModel)]="currentSite.name" name="name" required
+                           placeholder="Ex: Capgemini, La Défense…"
+                           autocomplete="off"
+                           (ngModelChange)="onNameInput($event)"
+                           (blur)="hideEnrichSuggest()"/>
+                    <span *ngIf="enrichLoading" class="enrich-spinner" aria-hidden="true">
+                      <svg viewBox="0 0 20 20" fill="currentColor" class="enrich-spin"><path fill-rule="evenodd" d="M4 10a6 6 0 1112 0A6 6 0 014 10zm6-8a8 8 0 100 16A8 8 0 0010 2z" clip-rule="evenodd" opacity="0.3"/><path d="M10 2a8 8 0 018 8h-2a6 6 0 00-6-6V2z"/></svg>
+                    </span>
+                    <div *ngIf="showEnrichSuggest && enrichSuggestions.length > 0" class="enrich-dropdown" role="listbox">
+                      <div *ngFor="let r of enrichSuggestions" class="enrich-item"
+                           role="option" (mousedown)="selectEnterprise(r)">
+                        <span class="enrich-name">{{ r.nom_raison_sociale }}</span>
+                        <span class="enrich-addr">{{ r.siege?.geo_adresse || r.siege?.libelle_commune || '' }}</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
                 <div class="form-field">
                   <label class="form-label">Localisation</label>
@@ -430,6 +457,13 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   searchQuery = '';
   sortBy: 'name' | 'footprint' | 'surface' = 'name';
 
+  /* ── Sirene autocomplete ── */
+  enrichSuggestions: EnterpriseResult[] = [];
+  showEnrichSuggest = false;
+  enrichLoading = false;
+  private nameSubject = new Subject<string>();
+  private enrichSub!: Subscription;
+
   private pieChartInstance: any;
   private barChartInstance: any;
   private toastTimer: any;
@@ -438,7 +472,8 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   constructor(
     private siteService: SiteService,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private siteEnrichService: SiteEnrichService
   ) {
     this.authService.currentUser.subscribe(user => {
       this.currentUser = user;
@@ -447,6 +482,22 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadData();
+    this.enrichSub = this.nameSubject.pipe(
+      debounceTime(300),
+      switchMap(q => {
+        if (!q || q.length < 3) {
+          this.enrichSuggestions = [];
+          this.enrichLoading = false;
+          return of([]);
+        }
+        this.enrichLoading = true;
+        return this.siteEnrichService.search(q);
+      })
+    ).subscribe((results: EnterpriseResult[]) => {
+      this.enrichLoading = false;
+      this.enrichSuggestions = results;
+      this.showEnrichSuggest = results.length > 0;
+    });
   }
 
   ngAfterViewInit(): void {
@@ -457,6 +508,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     clearTimeout(this.toastTimer);
     this.pieChartInstance?.destroy();
     this.barChartInstance?.destroy();
+    this.enrichSub?.unsubscribe();
   }
 
   loadData(): void {
@@ -570,6 +622,23 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       this.createPieChart();
       this.createBarChart();
     }
+  }
+
+  /* ── Sirene autocomplete handlers ── */
+  onNameInput(val: string): void {
+    this.nameSubject.next(val);
+  }
+
+  selectEnterprise(r: EnterpriseResult): void {
+    const data = this.siteEnrichService.buildSiteData(r);
+    this.currentSite = { ...this.currentSite, ...data };
+    this.showEnrichSuggest = false;
+    this.showToast('Données pré-remplies depuis Sirene ✓');
+  }
+
+  hideEnrichSuggest(): void {
+    // Slight delay so mousedown on a suggestion fires before blur closes the list
+    setTimeout(() => { this.showEnrichSuggest = false; }, 150);
   }
 
   /* ── Site CRUD ── */
