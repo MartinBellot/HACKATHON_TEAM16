@@ -100,7 +100,7 @@ public class SiteController {
         stats.put("totalSites", allSites.size());
 
         double totalFootprint = allSites.stream()
-                .mapToDouble(SiteResponse::getTotalFootprint)
+                .mapToDouble(s -> s.getTotalFootprint() != null ? s.getTotalFootprint() : 0.0)
                 .sum();
         stats.put("totalFootprint", totalFootprint);
 
@@ -108,6 +108,7 @@ public class SiteController {
         stats.put("averageFootprint", avgFootprint);
 
         double avgFootprintPerM2 = allSites.stream()
+                .filter(s -> s.getFootprintPerM2() != null)
                 .mapToDouble(SiteResponse::getFootprintPerM2)
                 .average()
                 .orElse(0.0);
