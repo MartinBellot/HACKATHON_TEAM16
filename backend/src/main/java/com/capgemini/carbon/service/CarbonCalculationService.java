@@ -17,8 +17,8 @@ public class CarbonCalculationService {
     private static final double WOOD_EMISSION_FACTOR = -500.0;    // Bois (capture carbone)
 
     // Facteur d'émission pour l'énergie (kgCO2e/MWh)
-    // Mix électrique français 2025
-    private static final double ENERGY_EMISSION_FACTOR = 57.0;
+    // Mix électrique français - ADEME Base Carbone
+    private static final double ENERGY_EMISSION_FACTOR = 52.0;
 
     // Facteur d'émission pour le parking (kgCO2e/place/an)
     private static final double PARKING_EMISSION_FACTOR = 150.0;
@@ -55,19 +55,19 @@ public class CarbonCalculationService {
         double total = 0.0;
 
         if (site.getConcreteQuantity() != null) {
-            total += site.getConcreteQuantity() * 1000 * CONCRETE_EMISSION_FACTOR;
+            total += site.getConcreteQuantity() * CONCRETE_EMISSION_FACTOR;
         }
 
         if (site.getSteelQuantity() != null) {
-            total += site.getSteelQuantity() * 1000 * STEEL_EMISSION_FACTOR;
+            total += site.getSteelQuantity() * STEEL_EMISSION_FACTOR;
         }
 
         if (site.getGlassQuantity() != null) {
-            total += site.getGlassQuantity() * 1000 * GLASS_EMISSION_FACTOR;
+            total += site.getGlassQuantity() * GLASS_EMISSION_FACTOR;
         }
 
         if (site.getWoodQuantity() != null) {
-            total += site.getWoodQuantity() * 1000 * WOOD_EMISSION_FACTOR;
+            total += site.getWoodQuantity() * WOOD_EMISSION_FACTOR;
         }
 
         // Estimation basée sur la surface si pas de données matériaux
@@ -85,8 +85,8 @@ public class CarbonCalculationService {
     private double calculateOperationalFootprint(Site site) {
         double total = 0.0;
 
-        // Émissions liées à la consommation énergétique
-        total += site.getEnergyConsumption() * 1000 * ENERGY_EMISSION_FACTOR;
+        // Émissions liées à la consommation énergétique (MWh * kgCO2e/MWh)
+        total += site.getEnergyConsumption() * ENERGY_EMISSION_FACTOR;
 
         // Émissions liées au parking
         if (site.getParkingPlaces() != null) {

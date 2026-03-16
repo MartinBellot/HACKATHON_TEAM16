@@ -958,9 +958,9 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   getCarbonScore(site: Site): { grade: string; bg: string; fg: string } {
     const kgPerM2 = site.footprintPerM2 ?? 0;
     if (kgPerM2 < 500)  return { grade: 'A', bg: 'rgba(52,199,89,0.15)',  fg: '#34C759' };
-    if (kgPerM2 < 1000) return { grade: 'B', bg: 'rgba(48,209,88,0.12)',  fg: '#30D158' };
-    if (kgPerM2 < 2000) return { grade: 'C', bg: 'rgba(255,159,10,0.15)', fg: '#FF9F0A' };
-    if (kgPerM2 < 4000) return { grade: 'D', bg: 'rgba(255,107,0,0.15)',  fg: '#FF6B00' };
+    if (kgPerM2 < 800)  return { grade: 'B', bg: 'rgba(48,209,88,0.12)',  fg: '#30D158' };
+    if (kgPerM2 < 1000) return { grade: 'C', bg: 'rgba(255,159,10,0.15)', fg: '#FF9F0A' };
+    if (kgPerM2 < 1500) return { grade: 'D', bg: 'rgba(255,107,0,0.15)',  fg: '#FF6B00' };
     return                      { grade: 'E', bg: 'rgba(255,59,48,0.15)',  fg: '#FF3B30' };
   }
 
