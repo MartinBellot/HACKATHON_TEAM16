@@ -2,6 +2,99 @@
    Dashboard – Apple-inspired styles
    ───────────────────────────────────── */
 
+/* ── Sirene autocomplete ── */
+.enrich-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.65rem 1rem;
+  margin-bottom: 0.5rem;
+  background: rgba(0, 122, 255, 0.07);
+  border: 1px solid rgba(0, 122, 255, 0.18);
+  border-radius: 10px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  strong { color: var(--text-primary); }
+}
+.enrich-banner-icon {
+  flex-shrink: 0;
+  width: 15px;
+  height: 15px;
+  color: #007AFF;
+}
+
+.enrich-field { position: relative; }
+
+.enrich-input-wrap {
+  position: relative;
+
+  .form-input { width: 100%; }
+}
+
+.enrich-spinner {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  color: #007AFF;
+  pointer-events: none;
+}
+
+.enrich-spin {
+  width: 16px;
+  height: 16px;
+  animation: spin 0.8s linear infinite;
+  transform-origin: center;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.enrich-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--bg-secondary, #fff);
+  border: 1px solid var(--separator, rgba(60,60,67,0.18));
+  border-radius: 10px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.14);
+  z-index: 400;
+  overflow: hidden;
+}
+
+.enrich-item {
+  padding: 9px 14px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  transition: background 0.1s ease;
+
+  &:not(:last-child) { border-bottom: 1px solid var(--separator, rgba(60,60,67,0.1)); }
+
+  &:hover { background: var(--bg-tertiary, #f5f5f7); }
+}
+
+.enrich-name {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.enrich-addr {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* ── Shell ── */
 .app-shell {
   min-height: 100vh;
