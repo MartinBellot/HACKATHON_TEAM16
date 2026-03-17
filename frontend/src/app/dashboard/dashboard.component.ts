@@ -1090,7 +1090,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     const maxValues = valuesByMetric.map(values => Math.max(...values, 1));
 
     const points = metrics.flatMap((metric, rowIndex) =>
-      this.sites.map((site, _columnIndex) => {
+      this.sites.map((site) => {
         const rawValue = metric.value(site); 
         
         const formatter = new Intl.NumberFormat('fr-FR', { 
