@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SiteService } from '../services/site.service';
 import { EnvironmentalContextService } from '../services/environmental-context.service';
+import { PdfReportService } from '../services/pdf-report.service';
 import { Site } from '../models/site.model';
 import { EnvironmentalContext } from '../models/environmental-context.model';
 
@@ -40,10 +41,16 @@ interface MaterialBar {
         </div>
 
         <div class="hero-content">
-          <button class="back-btn" (click)="goBack()">
-            <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd"/></svg>
-            Tableau de bord
-          </button>
+          <div class="hero-top-bar">
+            <button class="back-btn" (click)="goBack()">
+              <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd"/></svg>
+              Tableau de bord
+            </button>
+            <button class="pdf-btn" (click)="downloadPdf()">
+              <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V8z" clip-rule="evenodd"/></svg>
+              Télécharger PDF
+            </button>
+          </div>
 
           <div class="hero-main">
             <div class="hero-identity">
@@ -305,7 +312,8 @@ export class SiteDetailComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private siteService: SiteService,
-    private envService: EnvironmentalContextService
+    private envService: EnvironmentalContextService,
+    private pdfService: PdfReportService
   ) {}
 
   ngOnInit(): void {
@@ -339,6 +347,20 @@ export class SiteDetailComponent implements OnInit, OnDestroy {
 
   goBack(): void {
     this.router.navigate(['/dashboard']);
+  }
+
+  downloadPdf(): void {
+    if (!this.site) return;
+    this.pdfService.generate(
+      this.site,
+      this.gradeInfo,
+      this.impactInfo,
+      this.metrics,
+      this.materials,
+      this.recommendations,
+      this.envContext,
+      this.constructionPercent
+    );
   }
 
   // ── Grade & Impact (same logic as dashboard) ──
