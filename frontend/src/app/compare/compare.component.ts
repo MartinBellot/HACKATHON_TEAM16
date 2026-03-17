@@ -315,7 +315,7 @@ export class CompareComponent implements OnInit {
     return total1 < total2 ? this.selectedSite1.name : this.selectedSite2.name;
   }
 
-  get metrics(): Array<{ label: string; unit: string; site1Width: number; site2Width: number; site1Display: string; site2Display: string }> {
+  get metrics(): { label: string; unit: string; site1Width: number; site2Width: number; site1Display: string; site2Display: string }[] {
     if (!this.selectedSite1 || !this.selectedSite2) return [];
 
     const total1 = this.selectedSite1.totalFootprint ?? 0;

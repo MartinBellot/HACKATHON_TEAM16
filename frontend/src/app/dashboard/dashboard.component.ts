@@ -1055,7 +1055,6 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   createHeatmapChart(): void {
     if (!this.heatmapCanvas) return;
     const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const gridColor = isDark ? 'rgba(84,84,88,0.3)' : 'rgba(60,60,67,0.1)';
     const textColor = isDark ? '#8E8E93' : '#6E6E73';
 
     const metrics = [
@@ -1091,7 +1090,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     const maxValues = valuesByMetric.map(values => Math.max(...values, 1));
 
     const points = metrics.flatMap((metric, rowIndex) =>
-      this.sites.map((site, columnIndex) => {
+      this.sites.map((site, _columnIndex) => {
         const rawValue = metric.value(site); 
         
         const formatter = new Intl.NumberFormat('fr-FR', { 
@@ -1122,7 +1121,6 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
             borderColor: (ctx: any) => {
               const raw = ctx.raw;
               if (!raw) return 'rgba(0,0,0,0.08)';
-              const hue = 132 - (raw.intensity * 120);
               return isDark ? '#1C1C1E' : '#FFFFFF';
             },
             backgroundColor: (ctx: any) => {

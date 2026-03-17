@@ -429,7 +429,6 @@ export class SiteDetailComponent implements OnInit, OnDestroy {
   generateRecommendations(site: Site, env: EnvironmentalContext | null): Recommendation[] {
     const recos: Recommendation[] = [];
     const kgM2 = site.footprintPerM2 ?? 0;
-    const tTotal = (site.totalFootprint ?? 0) / 1000;
     const surface = site.totalSurface;
     const energyPerM2 = (site.energyConsumption / surface) * 1000; // kWh/m²
 
