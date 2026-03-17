@@ -132,7 +132,7 @@
   border-radius: 7px;
   overflow: hidden;
   flex-shrink: 0;
-  svg { width: 100%; height: 100%; }
+  svg, img { width: 100%; height: 100%; object-fit: contain; }
 }
 
 .nav-title {

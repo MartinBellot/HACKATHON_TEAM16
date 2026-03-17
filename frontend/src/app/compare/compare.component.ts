@@ -24,10 +24,7 @@ interface ComparisonResult {
       <nav class="navbar">
         <button class="nav-brand" type="button" (click)="goToDashboard()">
           <div class="nav-logo">
-            <svg viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="#007AFF"/>
-              <path d="M9 17l4.5 4.5L23 12" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-              <circle cx="16" cy="8" r="1.5" fill="rgba(255,255,255,0.7)"/>
-            </svg>
+            <img src="assets/icons/icon-192x192.png" alt="CO₂nscient">
           </div>
           <span class="nav-title">CO₂nscient</span>
         </button>

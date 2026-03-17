@@ -33,18 +33,7 @@ import { LoginRequest } from '../models/site.model';
       <div class="panel-left">
         <div class="brand-block">
           <div class="logo-mark">
-            <svg viewBox="0 0 48 48" fill="none">
-              <circle cx="24" cy="24" r="20" stroke="url(#grd)" stroke-width="1.5" opacity="0.4"/>
-              <circle cx="24" cy="24" r="13" stroke="url(#grd)" stroke-width="1.5" opacity="0.6"/>
-              <circle cx="24" cy="24" r="6" fill="url(#grd)"/>
-              <path d="M24 4 L24 8 M24 40 L24 44 M4 24 L8 24 M40 24 L44 24" stroke="url(#grd)" stroke-width="1" opacity="0.3"/>
-              <defs>
-                <linearGradient id="grd" x1="0" y1="0" x2="48" y2="48">
-                  <stop offset="0%" stop-color="#00e88f"/>
-                  <stop offset="100%" stop-color="#00b4d8"/>
-                </linearGradient>
-              </defs>
-            </svg>
+            <img src="assets/icons/icon-192x192.png" alt="CO₂nscient">
           </div>
           <h1 class="brand-title">CO₂nscient</h1>
           <p class="brand-sub">Plateforme de mesure et d'optimisation<br/>de l'empreinte carbone de vos sites</p>
@@ -228,7 +217,7 @@ import { LoginRequest } from '../models/site.model';
       animation: fadeUp 0.6s ease-out both;
     }
 
-    .logo-mark svg { width: 100%; height: 100%; }
+    .logo-mark img { width: 100%; height: 100%; border-radius: 12px; object-fit: contain; }
 
     .brand-title {
       font-family: 'Syne', sans-serif;
