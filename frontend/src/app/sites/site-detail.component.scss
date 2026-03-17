@@ -98,6 +98,13 @@ $grade-g: #C81E1E;
   margin: 0 auto;
 }
 
+.hero-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
 .back-btn {
   display: inline-flex;
   align-items: center;
@@ -110,12 +117,44 @@ $grade-g: #C81E1E;
   font-weight: 500;
   cursor: pointer;
   padding: 0.4rem 0;
-  margin-bottom: 1.25rem;
   transition: opacity 0.2s;
 
   &:hover { opacity: 0.7; }
 
   svg { width: 16px; height: 16px; }
+}
+
+.pdf-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, #007AFF 0%, #0055D4 100%);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 0.55rem 1.1rem;
+  font-family: $font-display;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 12px rgba(0, 122, 255, 0.25);
+  letter-spacing: 0.01em;
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(0, 122, 255, 0.4);
+  }
+
+  &:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 6px rgba(0, 122, 255, 0.2);
+  }
 }
 
 .hero-main {
