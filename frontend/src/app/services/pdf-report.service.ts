@@ -83,6 +83,27 @@ export class PdfReportService {
     // Safety factor for splitTextToSize — jsPDF underestimates width of accented chars
     const SAFE = 0.88;
 
+    // Replace Unicode characters unsupported by jsPDF built-in fonts
+    const sanitize = (s: string): string =>
+      s.replace(/[\u202F\u00A0]/g, ' ')
+       .replace(/\u2082/g, '2')
+       .replace(/[\u2212\u2013\u2014]/g, '-')
+       .replace(/[\u2018\u2019]/g, "'")
+       .replace(/[\u201C\u201D]/g, '"');
+
+    // Auto-patch jsPDF text methods to sanitize Unicode
+    const _origText = doc.text.bind(doc);
+    (doc as any).text = (t: any, x: number, y: number, o?: any, tr?: any) => {
+      if (typeof t === 'string') t = sanitize(t);
+      else if (Array.isArray(t)) t = t.map((l: string) => sanitize(l));
+      return _origText(t, x, y, o, tr);
+    };
+    const _origSplit = doc.splitTextToSize.bind(doc);
+    (doc as any).splitTextToSize = (t: any, w: number) =>
+      _origSplit(typeof t === 'string' ? sanitize(t) : t, w);
+    const _origGTW = doc.getTextWidth.bind(doc);
+    (doc as any).getTextWidth = (t: string) => _origGTW(sanitize(t));
+
     // Mix a color with white to create a light tint (for pill backgrounds)
     const lighten = (hex: string, amount = 0.82): string => {
       const [r, g, b] = hexToRgb(hex);
@@ -241,7 +262,7 @@ export class PdfReportService {
     doc.setFontSize(5.5);
     doc.setFont('helvetica', 'normal');
     setColor(C.tertiary);
-    doc.text('kgCO₂/m²/an', orbX, orbCenterY + orbR + 9, { align: 'center' });
+    doc.text('kgCO2/m²/an', orbX, orbCenterY + orbR + 9, { align: 'center' });
 
     // ── Hero bottom line ──
     y = heroH - 2;
@@ -311,10 +332,10 @@ export class PdfReportService {
     doc.setFontSize(6);
     doc.setFont('helvetica', 'normal');
     setColor(C.accent);
-    const cFootprint = site.constructionFootprint ? (site.constructionFootprint / 1000).toLocaleString('fr-FR', { maximumFractionDigits: 1 }) + ' tCO₂' : '—';
+    const cFootprint = site.constructionFootprint ? (site.constructionFootprint / 1000).toLocaleString('fr-FR', { maximumFractionDigits: 1 }) + ' tCO2' : '—';
     doc.text(cFootprint, barX, barTop + barH2 + 3.5);
     setColor(C.green);
-    const oFootprint = site.operationalFootprint ? (site.operationalFootprint / 1000).toLocaleString('fr-FR', { maximumFractionDigits: 1 }) + ' tCO₂/an' : '—';
+    const oFootprint = site.operationalFootprint ? (site.operationalFootprint / 1000).toLocaleString('fr-FR', { maximumFractionDigits: 1 }) + ' tCO2/an' : '—';
     doc.text(oFootprint, barX + barW, barTop + barH2 + 3.5, { align: 'right' });
     y += 24;
 
@@ -508,10 +529,10 @@ export class PdfReportService {
           doc.setFontSize(5.5);
           doc.setFont('helvetica', 'normal');
           setColor(C.tertiary);
-          doc.text(reco.impactLabel, impBarX + 3, cy + 3.5, { maxWidth: impBarW * 0.45 });
+              doc.text(reco.impactLabel, impBarX + 3, cy + 3.5, { maxWidth: impBarW * 0.50 });
           doc.setFont('helvetica', 'bold');
           setColor(C.green);
-          doc.text(reco.impact, impBarX + impBarW - 3, cy + 3.5, { align: 'right', maxWidth: impBarW * 0.45 });
+          doc.text(reco.impact, impBarX + impBarW - 3, cy + 3.5, { align: 'right', maxWidth: impBarW * 0.48 });
         }
 
         y += cardH + 3;
@@ -555,7 +576,7 @@ export class PdfReportService {
         doc.setFontSize(7);
         doc.setFont('helvetica', 'bold');
         setColor(C.secondary);
-        const fpText = (mat.footprint / 1000).toFixed(1) + ' tCO₂';
+        const fpText = (mat.footprint / 1000).toFixed(1) + ' tCO2';
         doc.text(fpText, M + CW - 5, my + 2.5, { align: 'right' });
 
         my += 9;
@@ -566,7 +587,7 @@ export class PdfReportService {
       doc.setFontSize(5.5);
       doc.setFont('helvetica', 'normal');
       setColor(C.tertiary);
-      const footNote = 'Facteurs d\'émission (kgCO\u2082e/t) : Béton 235 · Acier 1 850 · Verre 850 · Bois \u2212500';
+      const footNote = 'Facteurs d\'émission (kgCO2e/t) : Béton 235 · Acier 1 850 · Verre 850 · Bois -500';
       const fnLines = doc.splitTextToSize(footNote, CW - 10);
       doc.text(fnLines, M + 5, my);
 
