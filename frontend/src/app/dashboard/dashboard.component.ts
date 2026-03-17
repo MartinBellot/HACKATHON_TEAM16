@@ -31,6 +31,12 @@ Chart.register(...registerables);
           <span class="nav-title">CarbonTrack</span>
         </div>
         <div class="nav-right">
+          <button (click)="goToCompare()" class="btn-nav" aria-label="Comparer des sites">
+            <svg viewBox="0 0 20 20" fill="currentColor">
+              <path d="M3 5.75A1.75 1.75 0 014.75 4h2.5A1.75 1.75 0 019 5.75v8.5A1.75 1.75 0 017.25 16h-2.5A1.75 1.75 0 013 14.25v-8.5zm8 2A1.75 1.75 0 0112.75 6h2.5A1.75 1.75 0 0117 7.75v6.5A1.75 1.75 0 0115.25 16h-2.5A1.75 1.75 0 0111 14.25v-6.5z"/>
+            </svg>
+            <span>Comparer</span>
+          </button>
           <div class="nav-user">
             <div class="user-avatar">{{ currentUser?.username?.charAt(0)?.toUpperCase() }}</div>
             <span class="user-name">{{ currentUser?.username }}</span>
@@ -937,6 +943,10 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   logout(): void {
     this.authService.logout();
     this.router.navigate(['/login']);
+  }
+
+  goToCompare(): void {
+    this.router.navigate(['/compare']);
   }
 
   /* ── Helpers ── */
