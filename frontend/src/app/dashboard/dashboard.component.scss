@@ -466,6 +466,56 @@
   canvas { max-height: 300px !important; }
 }
 
+.chart-card--heatmap {
+  .chart-badge {
+    background: rgba(52,199,89,0.14);
+    color: #1f8a43;
+  }
+}
+
+.chart-body--heatmap {
+  height: 340px;
+
+  canvas {
+    max-height: 340px !important;
+  }
+}
+
+.heatmap-legend-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  width: 32px;
+  padding: 10px 0 30px 0;
+
+  .legend-text {
+    font-size: 9px;
+    font-weight: 700;
+    color: #8E8E93;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .legend-bar {
+    width: 6px;
+    flex: 1;
+    margin: 8px 0;
+    border-radius: 10px;
+    background: linear-gradient(180deg, 
+      #03045e 0%, 
+      #0077b6 25%, 
+      #00b4d8 50%, 
+      #90e0ef 75%, 
+      #caf0f8 100%
+    );
+  }
+}
+
+.chart-body--heatmap {
+  min-height: 350px; 
+}
+
 /* ── Sites section ── */
 .sites-section {
   animation: fadeInUp 0.4s ease both;

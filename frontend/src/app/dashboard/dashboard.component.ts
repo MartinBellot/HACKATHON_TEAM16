@@ -2,6 +2,7 @@ import { Component, OnInit, AfterViewInit, ElementRef, ViewChild, OnDestroy } fr
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { Chart, registerables } from 'chart.js';
+import { MatrixController, MatrixElement } from 'chartjs-chart-matrix';
 import { Subject, Subscription, of } from 'rxjs';
 import { debounceTime, switchMap } from 'rxjs/operators';
 import { SiteService } from '../services/site.service';
@@ -12,7 +13,7 @@ import { Site } from '../models/site.model';
 import { EnvironmentalContext } from '../models/environmental-context.model';
 import { FormsModule } from '@angular/forms';
 
-Chart.register(...registerables);
+Chart.register(...registerables, MatrixController, MatrixElement);
 
 @Component({
   selector: 'app-dashboard',
@@ -236,6 +237,30 @@ Chart.register(...registerables);
                 <p *ngIf="sites.length === 0 || !hasMaterialData" class="chart-placeholder">
                   Ajoutez des sites avec des données matériaux
                 </p>
+              </div>
+            </div>
+
+            <div class="chart-card chart-card--wide chart-card--heatmap" [class.chart-empty]="sites.length === 0">
+              <div class="chart-header">
+                <h2 class="chart-title">Heatmap des émissions par site</h2>
+                <span class="chart-badge">Comparatif</span>
+              </div>
+              
+              <div class="chart-body chart-body--tall chart-body--heatmap" style="display: flex; gap: 15px; align-items: stretch; padding: 15px;">
+                
+                <div *ngIf="sites.length > 0" class="heatmap-legend-container">
+                  <span class="legend-text">Max</span>
+                  <div class="legend-bar"></div>
+                  <span class="legend-text">Min</span>
+                </div>
+
+                <div style="flex: 1; position: relative;">
+                  <canvas #heatmapChart></canvas>
+                  <p *ngIf="sites.length === 0" class="chart-placeholder">
+                    Ajoutez des sites pour afficher la heatmap
+                  </p>
+                </div>
+
               </div>
             </div>
 
@@ -653,6 +678,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('intensityChart') intensityCanvas!: ElementRef;
   @ViewChild('stackedSitesChart') stackedSitesCanvas!: ElementRef;
   @ViewChild('materialsChart') materialsCanvas!: ElementRef;
+  @ViewChild('heatmapChart') heatmapCanvas!: ElementRef;
 
   sites: Site[] = [];
   stats: any = {};
@@ -683,6 +709,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   private intensityChartInstance: any;
   private stackedSitesChartInstance: any;
   private materialsChartInstance: any;
+  private heatmapChartInstance: any;
   private toastTimer: any;
   private maxFootprint = 0;
 
@@ -729,6 +756,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     this.intensityChartInstance?.destroy();
     this.stackedSitesChartInstance?.destroy();
     this.materialsChartInstance?.destroy();
+    this.heatmapChartInstance?.destroy();
     this.enrichSub?.unsubscribe();
   }
 
@@ -750,6 +778,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       this.createIntensityChart();
       this.createStackedSitesChart();
       this.createMaterialsChart();
+      this.createHeatmapChart();
     }
   }
 
@@ -1023,18 +1052,161 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  createHeatmapChart(): void {
+    if (!this.heatmapCanvas) return;
+    const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const gridColor = isDark ? 'rgba(84,84,88,0.3)' : 'rgba(60,60,67,0.1)';
+    const textColor = isDark ? '#8E8E93' : '#6E6E73';
+
+    const metrics = [
+      {
+        label: 'Construction (t CO\u2082)',
+        unit: 't CO\u2082',
+        digits: 2,
+        value: (site: Site) => (site.constructionFootprint ?? 0) / 1000,
+      },
+      {
+        label: 'Exploitation (t CO\u2082)',
+        unit: 't CO\u2082',
+        digits: 2,
+        value: (site: Site) => (site.operationalFootprint ?? 0) / 1000,
+      },
+      {
+        label: 'Intensité (kg CO\u2082/m\u00b2)',
+        unit: 'kg CO\u2082/m\u00b2',
+        digits: 2,
+        value: (site: Site) => site.footprintPerM2 ?? 0,
+      },
+      {
+        label: 'Surface (m\u00b2)',
+        unit: 'm\u00b2',
+        digits: 0,
+        value: (site: Site) => site.totalSurface ?? 0,
+      }
+    ];
+
+    const xLabels = this.sites.map(site => site.name);
+    const yLabels = metrics.map(metric => metric.label);
+    const valuesByMetric = metrics.map(metric => this.sites.map(site => metric.value(site)));
+    const maxValues = valuesByMetric.map(values => Math.max(...values, 1));
+
+    const points = metrics.flatMap((metric, rowIndex) =>
+      this.sites.map((site, columnIndex) => {
+        const rawValue = metric.value(site); 
+        
+        const formatter = new Intl.NumberFormat('fr-FR', { 
+          maximumFractionDigits: metric.digits 
+        });
+
+        return {
+          x: site.name, 
+          y: metric.label, 
+          
+          siteName: site.name,
+          metricLabel: metric.label,
+          display: `${formatter.format(rawValue)} ${metric.unit}`,
+          
+          intensity: rawValue / (maxValues[rowIndex] || 1),
+        };
+      })
+    );
+
+    this.heatmapChartInstance = new Chart(this.heatmapCanvas.nativeElement, {
+      type: 'matrix',
+      data: {
+        datasets: [
+          {
+            label: 'Heatmap carbone',
+            data: points as any,
+            borderWidth: 1,
+            borderColor: (ctx: any) => {
+              const raw = ctx.raw;
+              if (!raw) return 'rgba(0,0,0,0.08)';
+              const hue = 132 - (raw.intensity * 120);
+              return isDark ? '#1C1C1E' : '#FFFFFF';
+            },
+            backgroundColor: (ctx: any) => {
+              const raw = ctx.raw;
+              if (!raw || raw.intensity === undefined) return '#caf0f8'; // Couleur par défaut (vide)
+
+              const i = raw.intensity;
+
+              if (i <= 0.25) return '#caf0f8';
+              if (i <= 0.5)  return '#90e0ef';
+              if (i <= 0.75) return '#00b4d8';
+              if (i <= 0.9)  return '#0077b6';
+              return '#03045e';
+            },
+            width: ({ chart }: any) => {
+              const area = chart.chartArea;
+              if (!area) return 0;
+              return Math.max(14, (area.width / Math.max(xLabels.length, 1)) - 8);
+            },
+            height: ({ chart }: any) => {
+              const area = chart.chartArea;
+              if (!area) return 0;
+              return Math.max(20, (area.height / Math.max(yLabels.length, 1)) - 12);
+            },
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              title: (items: any[]) => items?.[0]?.raw?.siteName ?? '',
+              label: (ctx: any) => {
+                const raw = ctx.raw;
+                if (!raw) return '';
+                return ` ${raw.metricLabel}: ${raw.display}`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            type: 'category',
+            labels: xLabels, 
+            ticks: {
+              color: textColor,
+              font: { size: 11 }
+            },
+            grid: { display: false },
+            border: { display: false }
+          },
+          y: {
+            type: 'category',
+            labels: yLabels, 
+            offset: true,
+            ticks: {
+              color: textColor,
+              font: { size: 12 }
+            },
+            grid: { display: false },
+            border: { display: false }
+          }
+        }
+      }
+    });
+  }
+
   updateCharts(): void {
     this.pieChartInstance?.destroy();
     this.barChartInstance?.destroy();
     this.intensityChartInstance?.destroy();
     this.stackedSitesChartInstance?.destroy();
     this.materialsChartInstance?.destroy();
+    this.heatmapChartInstance?.destroy();
     if (this.pieCanvas && this.barCanvas) {
       this.createPieChart();
       this.createBarChart();
       this.createIntensityChart();
       this.createStackedSitesChart();
       this.createMaterialsChart();
+      this.createHeatmapChart();
     }
   }
 
