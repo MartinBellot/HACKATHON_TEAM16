@@ -1,49 +1,49 @@
 package com.capgemini.carbon.service;
 
+import com.capgemini.carbon.model.CalculationConfig;
 import com.capgemini.carbon.model.Site;
+import com.capgemini.carbon.repository.CalculationConfigRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Service de calcul de l'empreinte carbone
- * Facteurs d'émission basés sur les données ADEME
+ * Facteurs d'émission lus depuis la base de données (table calculation_config)
  */
 @Service
+@RequiredArgsConstructor
 public class CarbonCalculationService {
 
-    // Facteurs d'émission pour les matériaux de construction (kgCO2e/tonne)
-    private static final double CONCRETE_EMISSION_FACTOR = 235.0; // Béton
-    private static final double STEEL_EMISSION_FACTOR = 1850.0;   // Acier
-    private static final double GLASS_EMISSION_FACTOR = 850.0;    // Verre
-    private static final double WOOD_EMISSION_FACTOR = -500.0;    // Bois (capture carbone)
+    private final CalculationConfigRepository configRepo;
 
-    // Facteur d'émission pour l'énergie (kgCO2e/MWh)
-    // Mix électrique français - ADEME Base Carbone
-    private static final double ENERGY_EMISSION_FACTOR = 52.0;
+    private Map<String, Double> loadConfig() {
+        return configRepo.findAll().stream()
+            .collect(Collectors.toMap(CalculationConfig::getConfigKey, CalculationConfig::getConfigValue));
+    }
 
-    // Facteur d'émission pour le parking (kgCO2e/place/an)
-    private static final double PARKING_EMISSION_FACTOR = 150.0;
-
-    // Durée de vie de référence du bâtiment (RE2020)
-    private static final double BUILDING_LIFESPAN = 50.0;
+    private double cfg(Map<String, Double> config, String key, double fallback) {
+        return config.getOrDefault(key, fallback);
+    }
 
     /**
      * Calcule l'empreinte carbone totale d'un site
      */
     public void calculateFootprint(Site site) {
-        // Calcul de l'empreinte de construction
-        double constructionFootprint = calculateConstructionFootprint(site);
+        Map<String, Double> config = loadConfig();
 
-        // Calcul de l'empreinte opérationnelle annuelle
-        double operationalFootprint = calculateOperationalFootprint(site);
+        double constructionFootprint = calculateConstructionFootprint(site, config);
+        double operationalFootprint = calculateOperationalFootprint(site, config);
 
-        // Calcul des indicateurs (annualisé : construction amortie sur 50 ans + opérationnel annuel)
-        double totalFootprint = (constructionFootprint / BUILDING_LIFESPAN) + operationalFootprint;
+        double lifespan = cfg(config, "BUILDING_LIFESPAN", 50.0);
+        double totalFootprint = (constructionFootprint / lifespan) + operationalFootprint;
         double footprintPerM2 = totalFootprint / site.getTotalSurface();
         double footprintPerEmployee = site.getEmployees() != null && site.getEmployees() > 0
                 ? totalFootprint / site.getEmployees()
                 : 0.0;
 
-        // Mise à jour du site
         site.setConstructionFootprint(constructionFootprint);
         site.setOperationalFootprint(operationalFootprint);
         site.setTotalFootprint(totalFootprint);
@@ -51,58 +51,48 @@ public class CarbonCalculationService {
         site.setFootprintPerEmployee(footprintPerEmployee);
     }
 
-    /**
-     * Calcule l'empreinte carbone de la construction
-     */
-    private double calculateConstructionFootprint(Site site) {
+    private double calculateConstructionFootprint(Site site, Map<String, Double> config) {
         double total = 0.0;
 
         if (site.getConcreteQuantity() != null) {
-            total += site.getConcreteQuantity() * CONCRETE_EMISSION_FACTOR;
+            total += site.getConcreteQuantity() * cfg(config, "CONCRETE_EMISSION_FACTOR", 235.0);
         }
-
         if (site.getSteelQuantity() != null) {
-            total += site.getSteelQuantity() * STEEL_EMISSION_FACTOR;
+            total += site.getSteelQuantity() * cfg(config, "STEEL_EMISSION_FACTOR", 1850.0);
         }
-
         if (site.getGlassQuantity() != null) {
-            total += site.getGlassQuantity() * GLASS_EMISSION_FACTOR;
+            total += site.getGlassQuantity() * cfg(config, "GLASS_EMISSION_FACTOR", 850.0);
         }
-
         if (site.getWoodQuantity() != null) {
-            total += site.getWoodQuantity() * WOOD_EMISSION_FACTOR;
+            total += site.getWoodQuantity() * cfg(config, "WOOD_EMISSION_FACTOR", -500.0);
         }
 
-        // Estimation basée sur la surface si pas de données matériaux
         if (total == 0.0) {
-            // Estimation: 800 kgCO2e/m² pour un bâtiment tertiaire
-            total = site.getTotalSurface() * 800.0;
+            total = site.getTotalSurface() * cfg(config, "DEFAULT_CONSTRUCTION_FACTOR", 800.0);
         }
 
         return total;
     }
 
-    /**
-     * Calcule l'empreinte carbone opérationnelle annuelle
-     * Applique un facteur d'échelle : les grands bâtiments sont plus efficaces
-     * grâce à la mutualisation des équipements (CVC, éclairage, etc.)
-     */
-    private double calculateOperationalFootprint(Site site) {
+    private double calculateOperationalFootprint(Site site, Map<String, Double> config) {
         double total = 0.0;
 
-        // Émissions liées à la consommation énergétique (MWh * kgCO2e/MWh)
-        total += site.getEnergyConsumption() * ENERGY_EMISSION_FACTOR;
+        total += site.getEnergyConsumption() * cfg(config, "ENERGY_EMISSION_FACTOR", 52.0);
 
-        // Émissions liées au parking
         if (site.getParkingPlaces() != null) {
-            total += site.getParkingPlaces() * PARKING_EMISSION_FACTOR;
+            total += site.getParkingPlaces() * cfg(config, "PARKING_EMISSION_FACTOR", 150.0);
         }
 
-        // Facteur d'échelle : les petits bâtiments (<2000m²) sont moins efficaces
-        // car ils mutualisent moins les équipements techniques
-        // Ref surface = 5000m², facteur varie de 1.3 (petit) à 0.85 (très grand)
         double surface = site.getTotalSurface();
-        double scaleFactor = 1.0 + 0.3 * Math.exp(-surface / 2000.0) - 0.15 * (1 - Math.exp(-surface / 20000.0));
+        double scaleBase = cfg(config, "SCALE_BASE", 1.0);
+        double scaleSmallBonus = cfg(config, "SCALE_SMALL_BONUS", 0.3);
+        double scaleSmallDecay = cfg(config, "SCALE_SMALL_DECAY", 2000.0);
+        double scaleLargeBonus = cfg(config, "SCALE_LARGE_BONUS", 0.15);
+        double scaleLargeDecay = cfg(config, "SCALE_LARGE_DECAY", 20000.0);
+
+        double scaleFactor = scaleBase
+            + scaleSmallBonus * Math.exp(-surface / scaleSmallDecay)
+            - scaleLargeBonus * (1 - Math.exp(-surface / scaleLargeDecay));
         total *= scaleFactor;
 
         return total;
@@ -130,7 +120,6 @@ public class CarbonCalculationService {
         private Double operationalDifference;
         private Double perM2Difference;
 
-        // Getters and Setters
         public String getSite1Name() { return site1Name; }
         public void setSite1Name(String site1Name) { this.site1Name = site1Name; }
         public String getSite2Name() { return site2Name; }

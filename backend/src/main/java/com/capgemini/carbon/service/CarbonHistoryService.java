@@ -1,6 +1,8 @@
 package com.capgemini.carbon.service;
 
+import com.capgemini.carbon.model.CalculationConfig;
 import com.capgemini.carbon.model.Site;
+import com.capgemini.carbon.repository.CalculationConfigRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
@@ -22,25 +24,27 @@ import java.util.stream.Collectors;
 public class CarbonHistoryService {
 
     private final RestTemplate restTemplate;
+    private final CalculationConfigRepository configRepo;
 
-    // Intensité carbone du réseau électrique français (gCO₂/kWh) — source RTE éCO2mix
-    private static final Map<Integer, Double> GRID_CARBON_INTENSITY = Map.of(
-        2020, 52.0,
-        2021, 55.0,
-        2022, 62.0,  // Arrêts nucléaires → hausse significative
-        2023, 56.0,
-        2024, 52.0,
-        2025, 50.0   // Projection basse (reprise nucléaire + renouvelables)
-    );
-
-    // Référence : facteur actuel utilisé dans les calculs (52 kgCO₂e/MWh = 52 gCO₂/kWh)
-    private static final double REFERENCE_ENERGY_FACTOR = 52.0;
-    // Référence DJU chauffage pour calibrer les variations (moyenne France métropolitaine)
     private static final double REFERENCE_HDD = 2200.0;
     private static final double REFERENCE_CDD = 80.0;
 
-    private static final double PARKING_EMISSION_FACTOR = 150.0;
-    private static final double BUILDING_LIFESPAN = 50.0;
+    private Map<String, Double> loadConfig() {
+        return configRepo.findAll().stream()
+            .collect(Collectors.toMap(CalculationConfig::getConfigKey, CalculationConfig::getConfigValue));
+    }
+
+    private double cfg(Map<String, Double> config, String key, double fallback) {
+        return config.getOrDefault(key, fallback);
+    }
+
+    private Map<Integer, Double> getGridIntensities(Map<String, Double> config) {
+        Map<Integer, Double> grid = new HashMap<>();
+        for (int y = 2020; y <= 2025; y++) {
+            grid.put(y, cfg(config, "GRID_INTENSITY_" + y, 52.0));
+        }
+        return grid;
+    }
 
     @Cacheable(value = "carbonHistory", key = "#site.id")
     public List<YearlyFootprint> getHistory(Site site) {
@@ -64,38 +68,36 @@ public class CarbonHistoryService {
     }
 
     private YearlyFootprint calculateYearFootprint(Site site, int year) {
-        // 1. Fetch climate data for this year from Open-Meteo
+        Map<String, Double> config = loadConfig();
+        Map<Integer, Double> gridIntensities = getGridIntensities(config);
+
         ClimateYear climate = fetchClimateForYear(site.getLatitude(), site.getLongitude(), year);
 
-        // 2. Get grid carbon intensity for this year
-        double gridFactor = GRID_CARBON_INTENSITY.getOrDefault(year, REFERENCE_ENERGY_FACTOR);
+        double gridFactor = gridIntensities.getOrDefault(year, cfg(config, "ENERGY_EMISSION_FACTOR", 52.0));
 
-        // 3. Calculate operational footprint variation based on climate
-        double hddRatio = climate.hdd / REFERENCE_HDD; // >1 = colder year = more heating
+        double hddRatio = climate.hdd / REFERENCE_HDD;
         double cddRatio = REFERENCE_CDD > 0 ? climate.cdd / REFERENCE_CDD : 1.0;
-
-        // Energy consumption varies: ~70% heating, ~20% cooling, ~10% base load
         double energyVariation = 0.70 * hddRatio + 0.20 * cddRatio + 0.10;
-
-        // Adjusted energy consumption for this year
         double adjustedEnergy = site.getEnergyConsumption() * energyVariation;
 
-        // Operational footprint with year-specific grid factor (kgCO₂e/MWh)
         double operationalFootprint = adjustedEnergy * gridFactor;
 
-        // Add parking
         if (site.getParkingPlaces() != null) {
-            operationalFootprint += site.getParkingPlaces() * PARKING_EMISSION_FACTOR;
+            operationalFootprint += site.getParkingPlaces() * cfg(config, "PARKING_EMISSION_FACTOR", 150.0);
         }
 
-        // Apply scale factor (same as CarbonCalculationService)
         double surface = site.getTotalSurface();
-        double scaleFactor = 1.0 + 0.3 * Math.exp(-surface / 2000.0) - 0.15 * (1 - Math.exp(-surface / 20000.0));
+        double scaleBase = cfg(config, "SCALE_BASE", 1.0);
+        double scaleSmallBonus = cfg(config, "SCALE_SMALL_BONUS", 0.3);
+        double scaleSmallDecay = cfg(config, "SCALE_SMALL_DECAY", 2000.0);
+        double scaleLargeBonus = cfg(config, "SCALE_LARGE_BONUS", 0.15);
+        double scaleLargeDecay = cfg(config, "SCALE_LARGE_DECAY", 20000.0);
+        double scaleFactor = scaleBase + scaleSmallBonus * Math.exp(-surface / scaleSmallDecay) - scaleLargeBonus * (1 - Math.exp(-surface / scaleLargeDecay));
         operationalFootprint *= scaleFactor;
 
-        // Construction footprint (amortized, constant)
-        double constructionFootprint = calculateConstructionFootprint(site);
-        double annualizedConstruction = constructionFootprint / BUILDING_LIFESPAN;
+        double constructionFootprint = calculateConstructionFootprint(site, config);
+        double lifespan = cfg(config, "BUILDING_LIFESPAN", 50.0);
+        double annualizedConstruction = constructionFootprint / lifespan;
 
         double totalFootprint = annualizedConstruction + operationalFootprint;
         double footprintPerM2 = totalFootprint / surface;
@@ -177,13 +179,13 @@ public class CarbonHistoryService {
         return cy;
     }
 
-    private double calculateConstructionFootprint(Site site) {
+    private double calculateConstructionFootprint(Site site, Map<String, Double> config) {
         double total = 0.0;
-        if (site.getConcreteQuantity() != null) total += site.getConcreteQuantity() * 235.0;
-        if (site.getSteelQuantity() != null) total += site.getSteelQuantity() * 1850.0;
-        if (site.getGlassQuantity() != null) total += site.getGlassQuantity() * 850.0;
-        if (site.getWoodQuantity() != null) total += site.getWoodQuantity() * -500.0;
-        if (total == 0.0) total = site.getTotalSurface() * 800.0;
+        if (site.getConcreteQuantity() != null) total += site.getConcreteQuantity() * cfg(config, "CONCRETE_EMISSION_FACTOR", 235.0);
+        if (site.getSteelQuantity() != null) total += site.getSteelQuantity() * cfg(config, "STEEL_EMISSION_FACTOR", 1850.0);
+        if (site.getGlassQuantity() != null) total += site.getGlassQuantity() * cfg(config, "GLASS_EMISSION_FACTOR", 850.0);
+        if (site.getWoodQuantity() != null) total += site.getWoodQuantity() * cfg(config, "WOOD_EMISSION_FACTOR", -500.0);
+        if (total == 0.0) total = site.getTotalSurface() * cfg(config, "DEFAULT_CONSTRUCTION_FACTOR", 800.0);
         return total;
     }
 
@@ -196,12 +198,15 @@ public class CarbonHistoryService {
     }
 
     private YearlyFootprint buildFallbackYear(Site site, int year) {
-        double gridFactor = GRID_CARBON_INTENSITY.getOrDefault(year, REFERENCE_ENERGY_FACTOR);
-        double gridRatio = gridFactor / REFERENCE_ENERGY_FACTOR;
+        Map<String, Double> config = loadConfig();
+        Map<Integer, Double> gridIntensities = getGridIntensities(config);
+        double refFactor = cfg(config, "ENERGY_EMISSION_FACTOR", 52.0);
+        double gridFactor = gridIntensities.getOrDefault(year, refFactor);
+        double gridRatio = gridFactor / refFactor;
+        double lifespan = cfg(config, "BUILDING_LIFESPAN", 50.0);
 
-        double currentTotal = site.getTotalFootprint() != null ? site.getTotalFootprint() : 0;
         double currentConstruction = site.getConstructionFootprint() != null
-            ? site.getConstructionFootprint() / BUILDING_LIFESPAN : 0;
+            ? site.getConstructionFootprint() / lifespan : 0;
         double currentOperational = site.getOperationalFootprint() != null
             ? site.getOperationalFootprint() : 0;
 
