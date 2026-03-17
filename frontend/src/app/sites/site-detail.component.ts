@@ -698,7 +698,7 @@ export class SiteDetailComponent implements OnInit, OnDestroy {
             display: true,
             position: 'bottom',
             labels: {
-              color: 'rgba(255,255,255,0.6)',
+              color: '#555',
               font: { size: 11, family: "'Outfit', sans-serif" },
               padding: 16,
               usePointStyle: true,
@@ -707,6 +707,8 @@ export class SiteDetailComponent implements OnInit, OnDestroy {
           },
           tooltip: {
             backgroundColor: 'rgba(20,20,20,0.95)',
+            titleColor: '#fff',
+            bodyColor: '#ddd',
             titleFont: { family: "'Outfit', sans-serif", weight: 'bold' as const },
             bodyFont: { family: "'IBM Plex Mono', monospace", size: 12 },
             padding: 12,
@@ -719,19 +721,19 @@ export class SiteDetailComponent implements OnInit, OnDestroy {
         scales: {
           x: {
             grid: { display: false },
-            ticks: { color: 'rgba(255,255,255,0.5)', font: { size: 12, weight: 'bold' as const } }
+            ticks: { color: '#444', font: { size: 12, weight: 'bold' as const } }
           },
           y: {
-            grid: { color: 'rgba(255,255,255,0.04)' },
+            grid: { color: 'rgba(0,0,0,0.06)' },
             ticks: {
-              color: 'rgba(255,255,255,0.4)',
+              color: '#666',
               font: { size: 11 },
               callback: (v: any) => v + ' t'
             },
             title: {
               display: true,
               text: 'tCO₂/an',
-              color: 'rgba(255,255,255,0.4)',
+              color: '#666',
               font: { size: 11 }
             }
           }
