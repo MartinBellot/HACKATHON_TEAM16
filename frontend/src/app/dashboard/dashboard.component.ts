@@ -273,27 +273,29 @@ Chart.register(...registerables);
               <div *ngFor="let site of filteredSites; let i = index" class="site-card"
                    [style.animation-delay]="(i * 60) + 'ms'">
 
-                <div class="site-card-top">
-                  <div class="site-info">
-                    <div class="site-name-row">
-                      <h3 class="site-name">{{ site.name }}</h3>
-                      <span class="score-badge" [style.background]="getCarbonScore(site).bg" [style.color]="getCarbonScore(site).fg"
-                            [title]="'Efficacité : ' + formatKgM2(site.footprintPerM2) + ' kgCO₂/m²/an'">
-                        {{ getCarbonScore(site).grade }}
-                      </span>
-                      <span class="impact-badge" [style.background]="getImpactLevel(site).bg" [style.color]="getImpactLevel(site).fg"
-                            [title]="'Impact absolu : ' + formatTonnes(site.totalFootprint) + ' tCO₂/an'">
+                <!-- Header: grade + actions -->
+                <div class="card-header">
+                  <div class="card-badges">
+                    <div class="grade-wrapper" [class]="'grade-' + getCarbonScore(site).grade.toLowerCase()">
+                      <span class="grade-letter" [style.color]="getCarbonScore(site).fg">{{ getCarbonScore(site).grade }}</span>
+                      <div class="grade-tooltip">
+                        <strong>Efficacité énergétique</strong>
+                        <span>{{ formatKgM2(site.footprintPerM2) }} kgCO₂/m²/an</span>
+                        <span class="tooltip-hint">Construction amortie 50 ans + exploitation</span>
+                      </div>
+                    </div>
+                    <div class="impact-wrapper">
+                      <span class="impact-pill" [style.background]="getImpactLevel(site).bg" [style.color]="getImpactLevel(site).fg">
                         {{ getImpactLevel(site).label }}
                       </span>
-                    </div>
-                    <div class="site-location" *ngIf="site.location">
-                      <svg viewBox="0 0 16 16" fill="currentColor">
-                        <path fill-rule="evenodd" d="M8 0C4.686 0 2 2.686 2 6c0 4 6 10 6 10s6-6 6-10c0-3.314-2.686-6-6-6zm0 8.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z" clip-rule="evenodd"/>
-                      </svg>
-                      {{ site.location }}
+                      <div class="impact-tooltip">
+                        <strong>Impact absolu</strong>
+                        <span>{{ formatTonnes(site.totalFootprint) }} tCO₂/an</span>
+                        <span class="tooltip-hint">Émissions annualisées totales du site</span>
+                      </div>
                     </div>
                   </div>
-                  <div class="site-actions">
+                  <div class="card-actions">
                     <button (click)="editSite(site)" class="action-btn action-edit" aria-label="Modifier">
                       <svg viewBox="0 0 20 20" fill="currentColor">
                         <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
@@ -307,31 +309,48 @@ Chart.register(...registerables);
                   </div>
                 </div>
 
-                <div class="divider"></div>
-
-                <div class="site-stats">
-                  <div class="stat-item">
-                    <span class="stat-label">Surface</span>
-                    <span class="stat-val">{{ formatInt(site.totalSurface) }} m²</span>
-                  </div>
-                  <div class="stat-item">
-                    <span class="stat-label">CO₂ total</span>
-                    <span class="stat-val accent">{{ formatTonnes(site.totalFootprint) }} t</span>
-                  </div>
-                  <div class="stat-item">
-                    <span class="stat-label">CO₂ / m² / an</span>
-                    <span class="stat-val">{{ formatKgM2(site.footprintPerM2) }} kg</span>
-                  </div>
-                  <div class="stat-item" *ngIf="site.employees">
-                    <span class="stat-label">Employés</span>
-                    <span class="stat-val">{{ site.employees }}</span>
+                <!-- Identity -->
+                <div class="card-identity">
+                  <h3 class="site-name">{{ site.name }}</h3>
+                  <div class="site-location" *ngIf="site.location">
+                    <svg viewBox="0 0 16 16" fill="currentColor">
+                      <path fill-rule="evenodd" d="M8 0C4.686 0 2 2.686 2 6c0 4 6 10 6 10s6-6 6-10c0-3.314-2.686-6-6-6zm0 8.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z" clip-rule="evenodd"/>
+                    </svg>
+                    <span>{{ site.location }}</span>
                   </div>
                 </div>
 
-                <div class="footprint-bar" [title]="'CO₂ : ' + formatTonnes(site.totalFootprint) + ' t'">
-                  <div class="footprint-fill"
-                       [style.width]="getBarWidth(site) + '%'"
-                       [style.background]="getCarbonScore(site).bg">
+                <!-- Hero metric -->
+                <div class="card-hero">
+                  <div class="hero-value" [style.color]="getCarbonScore(site).fg">
+                    {{ formatKgM2(site.footprintPerM2) }}
+                  </div>
+                  <div class="hero-unit">kgCO₂/m²/an</div>
+                </div>
+
+                <!-- Stats -->
+                <div class="card-stats">
+                  <div class="stat-cell" title="Surface totale du site">
+                    <span class="stat-number">{{ formatInt(site.totalSurface) }}</span>
+                    <span class="stat-unit">m²</span>
+                  </div>
+                  <div class="stat-cell" title="Émissions annualisées totales">
+                    <span class="stat-number accent">{{ formatTonnes(site.totalFootprint) }}</span>
+                    <span class="stat-unit">tCO₂/an</span>
+                  </div>
+                  <div class="stat-cell" *ngIf="site.employees" title="Nombre d'employés sur le site">
+                    <span class="stat-number">{{ site.employees }}</span>
+                    <span class="stat-unit">employés</span>
+                  </div>
+                </div>
+
+                <!-- Bar -->
+                <div class="card-bar" [title]="'Empreinte relative : ' + formatTonnes(site.totalFootprint) + ' t — ' + getBarWidth(site).toFixed(0) + '% du site le plus émetteur'">
+                  <div class="bar-track">
+                    <div class="bar-fill"
+                         [style.width]="getBarWidth(site) + '%'"
+                         [style.background]="'linear-gradient(90deg, ' + getCarbonScore(site).fg + '44, ' + getCarbonScore(site).fg + ')'">
+                    </div>
                   </div>
                 </div>
 
