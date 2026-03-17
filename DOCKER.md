@@ -1,4 +1,4 @@
-# Carbon Calculator - Démarrage Docker
+# CO₂nscient - Démarrage Docker
 
 ## Prérequis
 - Docker Desktop installé et démarré

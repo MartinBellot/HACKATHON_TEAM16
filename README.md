@@ -1,4 +1,4 @@
-# Carbon Calculator
+# CO₂nscient
 
 Application fullstack pour calculer l'empreinte carbone d'un site physique incluant matériaux de construction et exploitation.
 

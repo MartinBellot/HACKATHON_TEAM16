@@ -28,7 +28,7 @@ Chart.register(...registerables);
               <circle cx="16" cy="8" r="1.5" fill="rgba(255,255,255,0.7)"/>
             </svg>
           </div>
-          <span class="nav-title">CarbonTrack</span>
+          <span class="nav-title">CO₂nscient</span>
         </div>
         <div class="nav-right">
           <div class="nav-user">
@@ -1044,7 +1044,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
     a.href     = url;
-    a.download = `carbontrack-sites-${new Date().toISOString().slice(0,10)}.csv`;
+    a.download = `CO₂nscient-sites-${new Date().toISOString().slice(0,10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
     this.showToast('Export CSV téléchargé');

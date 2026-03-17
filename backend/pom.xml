@@ -15,7 +15,7 @@
     <groupId>com.capgemini</groupId>
     <artifactId>carbon-calculator</artifactId>
     <version>1.0.0</version>
-    <name>Carbon Calculator API</name>
+    <name>CO₂nscient API</name>
     <description>API pour calculer l'empreinte carbone des sites physiques</description>
 
     <properties>
