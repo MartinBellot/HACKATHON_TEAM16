@@ -37,6 +37,12 @@ Chart.register(...registerables, MatrixController, MatrixElement);
             </svg>
             <span>Comparer</span>
           </button>
+          <button (click)="goToMethodology()" class="btn-nav" aria-label="Méthodologie">
+            <svg viewBox="0 0 20 20" fill="currentColor">
+              <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z"/>
+            </svg>
+            <span>Méthodologie</span>
+          </button>
           <div class="nav-user">
             <div class="user-avatar">{{ currentUser?.username?.charAt(0)?.toUpperCase() }}</div>
             <span class="user-name">{{ currentUser?.username }}</span>
@@ -1301,6 +1307,10 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
 
   goToCompare(): void {
     this.router.navigate(['/compare']);
+  }
+
+  goToMethodology(): void {
+    this.router.navigate(['/methodology']);
   }
 
   /* ── Helpers ── */
