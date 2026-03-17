@@ -707,7 +707,7 @@ export class SiteDetailComponent implements OnInit, OnDestroy {
           },
           tooltip: {
             backgroundColor: 'rgba(20,20,20,0.95)',
-            titleFont: { family: "'Outfit', sans-serif", weight: '600' },
+            titleFont: { family: "'Outfit', sans-serif", weight: 'bold' as const },
             bodyFont: { family: "'IBM Plex Mono', monospace", size: 12 },
             padding: 12,
             cornerRadius: 8,
@@ -719,7 +719,7 @@ export class SiteDetailComponent implements OnInit, OnDestroy {
         scales: {
           x: {
             grid: { display: false },
-            ticks: { color: 'rgba(255,255,255,0.5)', font: { size: 12, weight: '600' } }
+            ticks: { color: 'rgba(255,255,255,0.5)', font: { size: 12, weight: 'bold' as const } }
           },
           y: {
             grid: { color: 'rgba(255,255,255,0.04)' },
