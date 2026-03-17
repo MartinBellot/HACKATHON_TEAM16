@@ -84,7 +84,7 @@ export class PdfReportService {
     const SAFE = 0.88;
 
     // Mix a color with white to create a light tint (for pill backgrounds)
-    const lighten = (hex: string, amount: number = 0.82): string => {
+    const lighten = (hex: string, amount = 0.82): string => {
       const [r, g, b] = hexToRgb(hex);
       const lr = Math.round(r + (255 - r) * amount);
       const lg = Math.round(g + (255 - g) * amount);
