@@ -29,7 +29,7 @@ interface ComparisonResult {
               <circle cx="16" cy="8" r="1.5" fill="rgba(255,255,255,0.7)"/>
             </svg>
           </div>
-          <span class="nav-title">CarbonTrack</span>
+          <span class="nav-title">CO₂nscient</span>
         </button>
         <div class="nav-right">
           <button class="nav-pill nav-pill-active" type="button">Comparateur</button>

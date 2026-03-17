@@ -46,7 +46,7 @@ import { LoginRequest } from '../models/site.model';
               </defs>
             </svg>
           </div>
-          <h1 class="brand-title">Carbon<br/>Calculator</h1>
+          <h1 class="brand-title">CO₂nscient</h1>
           <p class="brand-sub">Plateforme de mesure et d'optimisation<br/>de l'empreinte carbone de vos sites</p>
         </div>
 
