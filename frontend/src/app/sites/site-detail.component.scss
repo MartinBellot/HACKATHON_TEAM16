@@ -531,6 +531,156 @@ $grade-g: #C81E1E;
 }
 
 // ══════════════════════════════════════
+//  EVOLUTION CHART
+// ══════════════════════════════════════
+
+.evo-source {
+  margin-left: auto;
+  font-family: $font-mono;
+  font-size: 0.6rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-tertiary);
+  opacity: 0.6;
+}
+
+.evo-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 0.75rem;
+}
+
+.evo-chart-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--separator);
+  border-radius: 14px;
+  padding: 1.25rem;
+  height: 320px;
+  position: relative;
+
+  canvas {
+    width: 100% !important;
+    height: 100% !important;
+  }
+}
+
+.evo-details-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--separator);
+  border-radius: 14px;
+  padding: 1rem 1.25rem;
+  overflow-y: auto;
+  max-height: 320px;
+}
+
+.evo-details-title {
+  font-family: $font-display;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 0.75rem;
+}
+
+.evo-year-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0;
+
+  & + .evo-year-row {
+    border-top: 1px solid var(--separator);
+  }
+}
+
+.evo-year {
+  font-family: $font-mono;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  min-width: 36px;
+}
+
+.evo-bars {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.evo-bar-group {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.evo-bar-label {
+  font-size: 0.55rem;
+  color: var(--text-tertiary);
+  min-width: 28px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.evo-bar-track {
+  flex: 1;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.evo-bar {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.6s ease;
+
+  &--grid { background: #007AFF; }
+  &--temp { background: #FF9F0A; }
+}
+
+.evo-bar-val {
+  font-family: $font-mono;
+  font-size: 0.62rem;
+  color: var(--text-secondary);
+  min-width: 36px;
+  text-align: right;
+}
+
+.evo-total {
+  font-family: $font-mono;
+  font-size: 0.78rem;
+  font-weight: 700;
+  min-width: 50px;
+  text-align: right;
+
+  &.evo-up { color: $grade-f; }
+  &.evo-down { color: $grade-a; }
+}
+
+.evo-insight {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding: 0.8rem 1rem;
+  background: rgba(0, 122, 255, 0.06);
+  border: 1px solid rgba(0, 122, 255, 0.12);
+  border-radius: 10px;
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+
+  svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    color: #007AFF;
+    margin-top: 0.1rem;
+  }
+}
+
+// ══════════════════════════════════════
 //  RECOMMENDATIONS
 // ══════════════════════════════════════
 
@@ -825,6 +975,14 @@ $grade-g: #C81E1E;
 
   .reco-grid {
     grid-template-columns: 1fr;
+  }
+
+  .evo-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .evo-chart-card {
+    height: 250px;
   }
 
   .material-row {

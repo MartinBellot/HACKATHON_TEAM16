@@ -34,3 +34,15 @@ export interface TransportContext {
   nearestStopName?: string;
   accessibilityScore?: string;
 }
+
+export interface YearlyFootprint {
+  year: number;
+  totalFootprint: number;
+  constructionFootprint: number;
+  operationalFootprint: number;
+  footprintPerM2: number;
+  gridCarbonIntensity: number;
+  heatingDegreeDays: number;
+  coolingDegreeDays: number;
+  meanTemperature: number;
+}

@@ -4,7 +4,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { SiteService } from '../services/site.service';
 import { EnvironmentalContextService } from '../services/environmental-context.service';
 import { Site } from '../models/site.model';
-import { EnvironmentalContext } from '../models/environmental-context.model';
+import { EnvironmentalContext, YearlyFootprint } from '../models/environmental-context.model';
+import { Chart, registerables } from 'chart.js';
 
 interface Recommendation {
   icon: string;
@@ -209,8 +210,54 @@ interface MaterialBar {
         </div>
       </section>
 
+      <!-- ═══ EVOLUTION ═══ -->
+      <section class="section evolution-section" style="--delay: 2" *ngIf="historyData.length > 0">
+        <div class="section-label">
+          <span class="section-marker section-marker--accent"></span>
+          Évolution des émissions (2020–2025)
+          <span class="evo-source">Sources : RTE éCO2mix · Open-Meteo Archive</span>
+        </div>
+
+        <div class="evo-grid">
+          <div class="evo-chart-card">
+            <canvas id="evolutionChart"></canvas>
+          </div>
+
+          <div class="evo-details-card">
+            <h4 class="evo-details-title">Facteurs de variation</h4>
+            <div class="evo-year-row" *ngFor="let h of historyData">
+              <span class="evo-year">{{ h.year }}</span>
+              <div class="evo-bars">
+                <div class="evo-bar-group">
+                  <span class="evo-bar-label">Grid</span>
+                  <div class="evo-bar-track">
+                    <div class="evo-bar evo-bar--grid" [style.width]="(h.gridCarbonIntensity / 70 * 100) + '%'"></div>
+                  </div>
+                  <span class="evo-bar-val">{{ h.gridCarbonIntensity }}g</span>
+                </div>
+                <div class="evo-bar-group" *ngIf="h.meanTemperature">
+                  <span class="evo-bar-label">Temp</span>
+                  <div class="evo-bar-track">
+                    <div class="evo-bar evo-bar--temp" [style.width]="(h.meanTemperature / 20 * 100) + '%'"></div>
+                  </div>
+                  <span class="evo-bar-val">{{ h.meanTemperature }}°C</span>
+                </div>
+              </div>
+              <span class="evo-total" [class.evo-up]="isYearUp(h)" [class.evo-down]="!isYearUp(h)">
+                {{ formatTonnes(h.totalFootprint) }} t
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="evo-insight" *ngIf="historyInsight">
+          <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
+          <span>{{ historyInsight }}</span>
+        </div>
+      </section>
+
       <!-- ═══ RECOMMENDATIONS ═══ -->
-      <section class="section reco-section" style="--delay: 2" *ngIf="recommendations.length > 0">
+      <section class="section reco-section" style="--delay: 3" *ngIf="recommendations.length > 0">
         <div class="section-label">
           <span class="section-marker section-marker--accent"></span>
           Recommandations
@@ -237,7 +284,7 @@ interface MaterialBar {
       </section>
 
       <!-- ═══ MATERIALS ═══ -->
-      <section class="section materials-section" style="--delay: 3" *ngIf="materials.length > 0">
+      <section class="section materials-section" style="--delay: 4" *ngIf="materials.length > 0">
         <div class="section-label">
           <span class="section-marker"></span>
           Matériaux de construction
@@ -292,9 +339,12 @@ interface MaterialBar {
 export class SiteDetailComponent implements OnInit, OnDestroy {
   site: Site | null = null;
   envContext: EnvironmentalContext | null = null;
+  historyData: YearlyFootprint[] = [];
+  historyInsight = '';
   recommendations: Recommendation[] = [];
   materials: MaterialBar[] = [];
   metrics: { icon: string; value: string; label: string; sub?: string }[] = [];
+  private evolutionChart: Chart | null = null;
 
   gradeInfo = { grade: 'C', bg: '', fg: '#FFCC00' };
   impactInfo = { label: 'Modéré', bg: 'rgba(48,209,88,0.12)', fg: '#30D158' };
@@ -330,12 +380,23 @@ export class SiteDetailComponent implements OnInit, OnDestroy {
         } else {
           this.recommendations = this.generateRecommendations(site, null);
         }
+
+        // Load carbon history
+        this.envService.getHistory(site.id!).subscribe(history => {
+          if (history && history.length > 0) {
+            this.historyData = history;
+            this.historyInsight = this.generateHistoryInsight(history);
+            setTimeout(() => this.buildEvolutionChart(), 100);
+          }
+        });
       },
       error: () => this.router.navigate(['/dashboard'])
     });
   }
 
-  ngOnDestroy(): void {}
+  ngOnDestroy(): void {
+    this.evolutionChart?.destroy();
+  }
 
   goBack(): void {
     this.router.navigate(['/dashboard']);
@@ -576,6 +637,128 @@ export class SiteDetailComponent implements OnInit, OnDestroy {
     const order = { haute: 0, moyenne: 1, basse: 2 };
     recos.sort((a, b) => order[a.priority] - order[b.priority]);
     return recos;
+  }
+
+  // ── Evolution chart ──
+
+  buildEvolutionChart(): void {
+    Chart.register(...registerables);
+    const canvas = document.getElementById('evolutionChart') as HTMLCanvasElement;
+    if (!canvas) return;
+
+    const labels = this.historyData.map(h => String(h.year));
+    const construction = this.historyData.map(h => h.constructionFootprint / 1000);
+    const operational = this.historyData.map(h => h.operationalFootprint / 1000);
+    const total = this.historyData.map(h => h.totalFootprint / 1000);
+
+    this.evolutionChart = new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Construction (amorti)',
+            data: construction,
+            backgroundColor: 'rgba(0, 122, 255, 0.7)',
+            borderRadius: 4,
+            stack: 'stack',
+            order: 2
+          },
+          {
+            label: 'Exploitation',
+            data: operational,
+            backgroundColor: 'rgba(52, 199, 89, 0.7)',
+            borderRadius: 4,
+            stack: 'stack',
+            order: 2
+          },
+          {
+            label: 'Total annualisé',
+            data: total,
+            type: 'line',
+            borderColor: '#FFCC00',
+            backgroundColor: 'rgba(255, 204, 0, 0.1)',
+            borderWidth: 2.5,
+            pointRadius: 5,
+            pointBackgroundColor: '#FFCC00',
+            pointBorderColor: '#1a1a1a',
+            pointBorderWidth: 2,
+            tension: 0.3,
+            fill: true,
+            order: 1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'bottom',
+            labels: {
+              color: 'rgba(255,255,255,0.6)',
+              font: { size: 11, family: "'Outfit', sans-serif" },
+              padding: 16,
+              usePointStyle: true,
+              pointStyleWidth: 12
+            }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(20,20,20,0.95)',
+            titleFont: { family: "'Outfit', sans-serif", weight: '600' },
+            bodyFont: { family: "'IBM Plex Mono', monospace", size: 12 },
+            padding: 12,
+            cornerRadius: 8,
+            callbacks: {
+              label: (ctx: any) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)} tCO₂/an`
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { color: 'rgba(255,255,255,0.5)', font: { size: 12, weight: '600' } }
+          },
+          y: {
+            grid: { color: 'rgba(255,255,255,0.04)' },
+            ticks: {
+              color: 'rgba(255,255,255,0.4)',
+              font: { size: 11 },
+              callback: (v: any) => v + ' t'
+            },
+            title: {
+              display: true,
+              text: 'tCO₂/an',
+              color: 'rgba(255,255,255,0.4)',
+              font: { size: 11 }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  isYearUp(h: YearlyFootprint): boolean {
+    const idx = this.historyData.indexOf(h);
+    if (idx <= 0) return false;
+    return h.totalFootprint > this.historyData[idx - 1].totalFootprint;
+  }
+
+  generateHistoryInsight(history: YearlyFootprint[]): string {
+    if (history.length < 2) return '';
+    const first = history[0];
+    const last = history[history.length - 1];
+    const diff = ((last.totalFootprint - first.totalFootprint) / first.totalFootprint * 100);
+    const peak = history.reduce((max, h) => h.totalFootprint > max.totalFootprint ? h : max);
+
+    if (diff < -5) {
+      return `Tendance favorable : les émissions ont baissé de ${Math.abs(diff).toFixed(1)}% entre ${first.year} et ${last.year}, principalement grâce à la décarbonation du réseau électrique.`;
+    } else if (diff > 5) {
+      return `Hausse de ${diff.toFixed(1)}% des émissions entre ${first.year} et ${last.year}. Le pic en ${peak.year} (${peak.gridCarbonIntensity}g CO₂/kWh grid) est lié aux arrêts de réacteurs nucléaires.`;
+    }
+    return `Émissions stables (${Math.abs(diff).toFixed(1)}% de variation) sur la période ${first.year}–${last.year}. Le pic en ${peak.year} reflète la hausse de l'intensité carbone du réseau (${peak.gridCarbonIntensity}g/kWh).`;
   }
 
   // ── Formatters ──

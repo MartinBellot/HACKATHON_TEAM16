@@ -6,6 +6,7 @@ import com.capgemini.carbon.dto.SiteResponse;
 import com.capgemini.carbon.model.Site;
 import com.capgemini.carbon.repository.SiteRepository;
 import com.capgemini.carbon.service.CarbonCalculationService;
+import com.capgemini.carbon.service.CarbonHistoryService;
 import com.capgemini.carbon.service.EnvironmentalContextService;
 import com.capgemini.carbon.service.SiteService;
 import jakarta.validation.Valid;
@@ -27,6 +28,7 @@ public class SiteController {
     private final SiteService siteService;
     private final CarbonCalculationService carbonCalculationService;
     private final EnvironmentalContextService environmentalContextService;
+    private final CarbonHistoryService carbonHistoryService;
     private final SiteRepository siteRepository;
 
     @PostMapping
@@ -104,6 +106,14 @@ public class SiteController {
                 .orElseThrow(() -> new RuntimeException("Site not found"));
         EnvironmentalContextResponse context = environmentalContextService.getContext(site);
         return ResponseEntity.ok(context);
+    }
+
+    @GetMapping("/{id}/history")
+    public ResponseEntity<List<CarbonHistoryService.YearlyFootprint>> getCarbonHistory(@PathVariable Long id) {
+        Site site = siteRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Site not found"));
+        List<CarbonHistoryService.YearlyFootprint> history = carbonHistoryService.getHistory(site);
+        return ResponseEntity.ok(history);
     }
 
     @GetMapping("/stats")
