@@ -1,8 +1,12 @@
 package com.capgemini.carbon.controller;
 
+import com.capgemini.carbon.dto.EnvironmentalContextResponse;
 import com.capgemini.carbon.dto.SiteRequest;
 import com.capgemini.carbon.dto.SiteResponse;
+import com.capgemini.carbon.model.Site;
+import com.capgemini.carbon.repository.SiteRepository;
 import com.capgemini.carbon.service.CarbonCalculationService;
+import com.capgemini.carbon.service.EnvironmentalContextService;
 import com.capgemini.carbon.service.SiteService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +26,8 @@ public class SiteController {
 
     private final SiteService siteService;
     private final CarbonCalculationService carbonCalculationService;
+    private final EnvironmentalContextService environmentalContextService;
+    private final SiteRepository siteRepository;
 
     @PostMapping
     public ResponseEntity<SiteResponse> createSite(
@@ -90,6 +96,14 @@ public class SiteController {
 
         CarbonCalculationService.ComparisonResult result = carbonCalculationService.compareSites(site1, site2);
         return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/{id}/environmental-context")
+    public ResponseEntity<EnvironmentalContextResponse> getEnvironmentalContext(@PathVariable Long id) {
+        Site site = siteRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Site not found"));
+        EnvironmentalContextResponse context = environmentalContextService.getContext(site);
+        return ResponseEntity.ok(context);
     }
 
     @GetMapping("/stats")

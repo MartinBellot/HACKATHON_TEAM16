@@ -22,6 +22,10 @@ public class Site {
 
     private String location;
 
+    private Double latitude;
+    private Double longitude;
+    private String inseeCode;
+
     @Column(nullable = false)
     private Double totalSurface; // m²
 

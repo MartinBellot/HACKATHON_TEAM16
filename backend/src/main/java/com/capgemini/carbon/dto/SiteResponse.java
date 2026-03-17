@@ -9,6 +9,9 @@ public class SiteResponse {
     private Long id;
     private String name;
     private String location;
+    private Double latitude;
+    private Double longitude;
+    private String inseeCode;
     private Double totalSurface;
     private Integer parkingPlaces;
     private Integer undergroundParking;

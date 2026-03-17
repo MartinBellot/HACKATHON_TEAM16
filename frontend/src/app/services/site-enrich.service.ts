@@ -88,9 +88,14 @@ export class SiteEnrichService {
     const glassQuantity    = +(totalSurface * 0.015).toFixed(1);
     const woodQuantity     = +(totalSurface * 0.008).toFixed(1);
 
+    const lat = r.siege?.latitude ? parseFloat(r.siege.latitude) : undefined;
+    const lon = r.siege?.longitude ? parseFloat(r.siege.longitude) : undefined;
+
     return {
       name: r.nom_raison_sociale,
       location: address,
+      latitude: lat,
+      longitude: lon,
       employees: employees || undefined,
       totalSurface,
       energyConsumption,

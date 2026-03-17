@@ -12,6 +12,10 @@ public class SiteRequest {
 
     private String location;
 
+    private Double latitude;
+    private Double longitude;
+    private String inseeCode;
+
     @NotNull
     @Positive
     private Double totalSurface;

@@ -2,6 +2,9 @@ export interface Site {
   id?: number;
   name: string;
   location?: string;
+  latitude?: number;
+  longitude?: number;
+  inseeCode?: string;
   totalSurface: number;
   parkingPlaces?: number;
   undergroundParking?: number;

@@ -7,7 +7,9 @@ import { debounceTime, switchMap } from 'rxjs/operators';
 import { SiteService } from '../services/site.service';
 import { AuthService } from '../services/auth.service';
 import { SiteEnrichService, EnterpriseResult } from '../services/site-enrich.service';
+import { EnvironmentalContextService } from '../services/environmental-context.service';
 import { Site } from '../models/site.model';
+import { EnvironmentalContext } from '../models/environmental-context.model';
 import { FormsModule } from '@angular/forms';
 
 Chart.register(...registerables);
@@ -296,6 +298,11 @@ Chart.register(...registerables);
                     </div>
                   </div>
                   <div class="card-actions">
+                    <button (click)="openSiteDetail(site)" class="action-btn action-report" aria-label="Voir le rapport">
+                      <svg viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/>
+                      </svg>
+                    </button>
                     <button (click)="editSite(site)" class="action-btn action-edit" aria-label="Modifier">
                       <svg viewBox="0 0 20 20" fill="currentColor">
                         <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
@@ -310,7 +317,7 @@ Chart.register(...registerables);
                 </div>
 
                 <!-- Identity -->
-                <div class="card-identity">
+                <div class="card-identity" (click)="openSiteDetail(site)" style="cursor: pointer;">
                   <h3 class="site-name">{{ site.name }}</h3>
                   <div class="site-location" *ngIf="site.location">
                     <svg viewBox="0 0 16 16" fill="currentColor">
@@ -352,6 +359,136 @@ Chart.register(...registerables);
                          [style.background]="'linear-gradient(90deg, ' + getCarbonScore(site).fg + '44, ' + getCarbonScore(site).fg + ')'">
                     </div>
                   </div>
+                </div>
+
+                <!-- Environmental Context toggle -->
+                <button *ngIf="site.latitude && site.longitude" class="env-toggle"
+                        (click)="toggleEnvContext(site)"
+                        [class.env-toggle--active]="expandedEnvSite === site.id">
+                  <svg viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+                  </svg>
+                  Contexte environnemental
+                  <svg class="env-chevron" viewBox="0 0 20 20" fill="currentColor" [style.transform]="expandedEnvSite === site.id ? 'rotate(180deg)' : ''">
+                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                  </svg>
+                </button>
+
+                <!-- Environmental Context panel -->
+                <div *ngIf="expandedEnvSite === site.id" class="env-panel">
+                  <div *ngIf="envContextLoading" class="env-loading">
+                    <div class="env-spinner"></div>
+                    <span>Chargement des données environnementales…</span>
+                  </div>
+
+                  <ng-container *ngIf="!envContextLoading && envContextData[site.id!]">
+
+                    <!-- DPE -->
+                    <div class="env-section" *ngIf="envContextData[site.id!].dpe?.nearbyBuildingsCount">
+                      <div class="env-section-header">
+                        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/></svg>
+                        <h4>DPE voisinage</h4>
+                        <span class="env-badge">{{ envContextData[site.id!].dpe!.nearbyBuildingsCount }} bâtiments</span>
+                      </div>
+                      <div class="env-kpi-row">
+                        <div class="env-kpi">
+                          <span class="env-kpi-value">{{ envContextData[site.id!].dpe!.averageDpe }}</span>
+                          <span class="env-kpi-unit">kWhEP/m²/an moy.</span>
+                        </div>
+                        <div class="env-kpi">
+                          <span class="env-kpi-value env-grade" [class]="'dpe-' + (envContextData[site.id!].dpe!.dominantLabel || 'D').toLowerCase()">
+                            {{ envContextData[site.id!].dpe!.dominantLabel }}
+                          </span>
+                          <span class="env-kpi-unit">classe dominante</span>
+                        </div>
+                      </div>
+                      <div class="dpe-bar" *ngIf="envContextData[site.id!].dpe!.distribution">
+                        <div *ngFor="let d of envContextData[site.id!].dpe!.distribution"
+                             class="dpe-segment" [class]="'dpe-' + d.label.toLowerCase()"
+                             [style.flex]="d.count"
+                             [title]="d.label + ': ' + d.count + ' bâtiments'">
+                          <span *ngIf="d.count > 0">{{ d.label }}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Climate -->
+                    <div class="env-section" *ngIf="envContextData[site.id!].climate?.annualMeanTemp">
+                      <div class="env-section-header">
+                        <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.547a1 1 0 01.894 1.79l-1.233.422 1.606 2.765a1 1 0 01-1.732 1l-1.604-2.762-3.484 1.19V13h3.5a1 1 0 110 2H6.5a1 1 0 110-2H10V8.763L6.516 7.573l-1.604 2.762a1 1 0 11-1.732-1l1.606-2.765-1.233-.422a1 1 0 11.894-1.79l1.599.547L10 3.323V3a1 1 0 011-1z" clip-rule="evenodd"/></svg>
+                        <h4>Climat</h4>
+                        <span class="env-badge">Zone {{ envContextData[site.id!].climate!.climateZone }}</span>
+                      </div>
+                      <div class="env-kpi-row">
+                        <div class="env-kpi">
+                          <span class="env-kpi-value">{{ envContextData[site.id!].climate!.annualMeanTemp }}°C</span>
+                          <span class="env-kpi-unit">temp. moyenne</span>
+                        </div>
+                        <div class="env-kpi">
+                          <span class="env-kpi-value">{{ envContextData[site.id!].climate!.heatingDegreeDays }}</span>
+                          <span class="env-kpi-unit">DJU chauffage</span>
+                        </div>
+                        <div class="env-kpi">
+                          <span class="env-kpi-value">{{ envContextData[site.id!].climate!.coolingDegreeDays }}</span>
+                          <span class="env-kpi-unit">DJU climatisation</span>
+                        </div>
+                        <div class="env-kpi" *ngIf="envContextData[site.id!].climate!.annualSolarRadiation">
+                          <span class="env-kpi-value">{{ envContextData[site.id!].climate!.annualSolarRadiation }}</span>
+                          <span class="env-kpi-unit">kWh/m² solaire</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Transport -->
+                    <div class="env-section" *ngIf="envContextData[site.id!].transport">
+                      <div class="env-section-header">
+                        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M13 6H7a4 4 0 00-4 4v4a2 2 0 002 2h1l1 2h6l1-2h1a2 2 0 002-2v-4a4 4 0 00-4-4zM7 14a1 1 0 110-2 1 1 0 010 2zm6 0a1 1 0 110-2 1 1 0 010 2zM5 2h10a1 1 0 010 2H5a1 1 0 010-2z"/></svg>
+                        <h4>Transports</h4>
+                        <span class="env-badge" [class]="'access-' + (envContextData[site.id!].transport!.accessibilityScore || 'Faible').toLowerCase()">
+                          {{ envContextData[site.id!].transport!.accessibilityScore }}
+                        </span>
+                      </div>
+                      <div class="env-transport-grid">
+                        <div class="transport-item" *ngIf="envContextData[site.id!].transport!.busStopsNearby">
+                          <span class="transport-count">{{ envContextData[site.id!].transport!.busStopsNearby }}</span>
+                          <span class="transport-label">Bus</span>
+                        </div>
+                        <div class="transport-item" *ngIf="envContextData[site.id!].transport!.tramStopsNearby">
+                          <span class="transport-count">{{ envContextData[site.id!].transport!.tramStopsNearby }}</span>
+                          <span class="transport-label">Tram</span>
+                        </div>
+                        <div class="transport-item" *ngIf="envContextData[site.id!].transport!.metroStopsNearby">
+                          <span class="transport-count">{{ envContextData[site.id!].transport!.metroStopsNearby }}</span>
+                          <span class="transport-label">Métro</span>
+                        </div>
+                        <div class="transport-item" *ngIf="envContextData[site.id!].transport!.trainStationsNearby">
+                          <span class="transport-count">{{ envContextData[site.id!].transport!.trainStationsNearby }}</span>
+                          <span class="transport-label">Gare</span>
+                        </div>
+                        <div class="transport-item" *ngIf="envContextData[site.id!].transport!.bikeShareNearby">
+                          <span class="transport-count">{{ envContextData[site.id!].transport!.bikeShareNearby }}</span>
+                          <span class="transport-label">Vélos</span>
+                        </div>
+                      </div>
+                      <div class="transport-nearest" *ngIf="envContextData[site.id!].transport!.nearestStopName">
+                        Arrêt le plus proche : <strong>{{ envContextData[site.id!].transport!.nearestStopName }}</strong>
+                        à {{ envContextData[site.id!].transport!.nearestStopDistance }}m
+                      </div>
+                    </div>
+
+                    <!-- No data -->
+                    <div *ngIf="!envContextData[site.id!].dpe?.nearbyBuildingsCount && !envContextData[site.id!].climate?.annualMeanTemp && !envContextData[site.id!].transport" class="env-empty">
+                      Aucune donnée environnementale disponible pour cette localisation.
+                    </div>
+
+                    <!-- Link to full report -->
+                    <button class="env-report-link" (click)="openSiteDetail(site)">
+                      <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/></svg>
+                      Voir le rapport complet et recommandations
+                      <svg viewBox="0 0 20 20" fill="currentColor" class="arrow-right"><path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+                    </button>
+
+                  </ng-container>
                 </div>
 
               </div>
@@ -523,6 +660,11 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   searchQuery = '';
   sortBy: 'name' | 'footprint' | 'surface' = 'name';
 
+  /* ── Environmental context ── */
+  envContextData: Record<number, EnvironmentalContext> = {};
+  expandedEnvSite: number | null = null;
+  envContextLoading = false;
+
   /* ── Sirene autocomplete ── */
   enrichSuggestions: EnterpriseResult[] = [];
   showEnrichSuggest = false;
@@ -542,7 +684,8 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     private siteService: SiteService,
     private authService: AuthService,
     private router: Router,
-    private siteEnrichService: SiteEnrichService
+    private siteEnrichService: SiteEnrichService,
+    private envContextService: EnvironmentalContextService
   ) {
     this.authService.currentUser.subscribe(user => {
       this.currentUser = user;
@@ -906,11 +1049,31 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     setTimeout(() => { this.showEnrichSuggest = false; }, 150);
   }
 
+  /* ── Environmental context ── */
+  toggleEnvContext(site: Site): void {
+    if (this.expandedEnvSite === site.id) {
+      this.expandedEnvSite = null;
+      return;
+    }
+    this.expandedEnvSite = site.id!;
+    if (!this.envContextData[site.id!]) {
+      this.envContextLoading = true;
+      this.envContextService.getContext(site.id!).subscribe(ctx => {
+        this.envContextData[site.id!] = ctx;
+        this.envContextLoading = false;
+      });
+    }
+  }
+
   /* ── Site CRUD ── */
   showSiteForm(): void {
     this.showForm = true;
     this.editMode = false;
     this.currentSite = {};
+  }
+
+  openSiteDetail(site: Site): void {
+    this.router.navigate(['/site', site.id]);
   }
 
   editSite(site: Site): void {

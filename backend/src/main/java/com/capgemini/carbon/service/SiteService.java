@@ -93,6 +93,9 @@ public class SiteService {
     private void mapRequestToSite(SiteRequest request, Site site) {
         site.setName(request.getName());
         site.setLocation(request.getLocation());
+        site.setLatitude(request.getLatitude());
+        site.setLongitude(request.getLongitude());
+        site.setInseeCode(request.getInseeCode());
         site.setTotalSurface(request.getTotalSurface());
         site.setParkingPlaces(request.getParkingPlaces());
         site.setUndergroundParking(request.getUndergroundParking());
@@ -112,6 +115,9 @@ public class SiteService {
         response.setId(site.getId());
         response.setName(site.getName());
         response.setLocation(site.getLocation());
+        response.setLatitude(site.getLatitude());
+        response.setLongitude(site.getLongitude());
+        response.setInseeCode(site.getInseeCode());
         response.setTotalSurface(site.getTotalSurface());
         response.setParkingPlaces(site.getParkingPlaces());
         response.setUndergroundParking(site.getUndergroundParking());
