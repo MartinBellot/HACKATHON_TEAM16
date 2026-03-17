@@ -571,6 +571,19 @@
   letter-spacing: 0;
 }
 
+.impact-badge {
+  flex-shrink: 0;
+  border-radius: 6px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
 .site-location {
   display: flex;
   align-items: center;

@@ -84,6 +84,8 @@ public class CarbonCalculationService {
 
     /**
      * Calcule l'empreinte carbone opérationnelle annuelle
+     * Applique un facteur d'échelle : les grands bâtiments sont plus efficaces
+     * grâce à la mutualisation des équipements (CVC, éclairage, etc.)
      */
     private double calculateOperationalFootprint(Site site) {
         double total = 0.0;
@@ -95,6 +97,13 @@ public class CarbonCalculationService {
         if (site.getParkingPlaces() != null) {
             total += site.getParkingPlaces() * PARKING_EMISSION_FACTOR;
         }
+
+        // Facteur d'échelle : les petits bâtiments (<2000m²) sont moins efficaces
+        // car ils mutualisent moins les équipements techniques
+        // Ref surface = 5000m², facteur varie de 1.3 (petit) à 0.85 (très grand)
+        double surface = site.getTotalSurface();
+        double scaleFactor = 1.0 + 0.3 * Math.exp(-surface / 2000.0) - 0.15 * (1 - Math.exp(-surface / 20000.0));
+        total *= scaleFactor;
 
         return total;
     }

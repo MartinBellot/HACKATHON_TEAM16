@@ -125,7 +125,7 @@ Chart.register(...registerables);
               </div>
               <div class="kpi-body">
                 <div class="kpi-value">{{ formatKgM2(stats?.averageFootprintPerM2) }}</div>
-                <div class="kpi-label">kg CO₂ / m² moyen</div>
+                <div class="kpi-label">kg CO₂ / m² / an moyen</div>
               </div>
             </div>
 
@@ -277,8 +277,13 @@ Chart.register(...registerables);
                   <div class="site-info">
                     <div class="site-name-row">
                       <h3 class="site-name">{{ site.name }}</h3>
-                      <span class="score-badge" [style.background]="getCarbonScore(site).bg" [style.color]="getCarbonScore(site).fg">
+                      <span class="score-badge" [style.background]="getCarbonScore(site).bg" [style.color]="getCarbonScore(site).fg"
+                            [title]="'Efficacité : ' + formatKgM2(site.footprintPerM2) + ' kgCO₂/m²/an'">
                         {{ getCarbonScore(site).grade }}
+                      </span>
+                      <span class="impact-badge" [style.background]="getImpactLevel(site).bg" [style.color]="getImpactLevel(site).fg"
+                            [title]="'Impact absolu : ' + formatTonnes(site.totalFootprint) + ' tCO₂/an'">
+                        {{ getImpactLevel(site).label }}
                       </span>
                     </div>
                     <div class="site-location" *ngIf="site.location">
@@ -314,7 +319,7 @@ Chart.register(...registerables);
                     <span class="stat-val accent">{{ formatTonnes(site.totalFootprint) }} t</span>
                   </div>
                   <div class="stat-item">
-                    <span class="stat-label">CO₂ / m²</span>
+                    <span class="stat-label">CO₂ / m² / an</span>
                     <span class="stat-val">{{ formatKgM2(site.footprintPerM2) }} kg</span>
                   </div>
                   <div class="stat-item" *ngIf="site.employees">
@@ -682,7 +687,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       data: {
         labels: sorted.map(s => s.name),
         datasets: [{
-          label: 'kg CO\u2082/m\u00b2',
+          label: 'kg CO\u2082/m\u00b2/an',
           data: sorted.map(s => +(s.footprintPerM2 ?? 0).toFixed(2)),
           backgroundColor: colors.map(c => c + '33'),
           borderColor: colors,
@@ -966,6 +971,15 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     return                     { grade: 'G', bg: 'rgba(200,30,30,0.15)',  fg: '#C81E1E' };
   }
 
+  getImpactLevel(site: Site): { label: string; bg: string; fg: string } {
+    const tonnes = (site.totalFootprint ?? 0) / 1000;
+    if (tonnes < 50)   return { label: 'Faible',  bg: 'rgba(52,199,89,0.15)',  fg: '#34C759' };
+    if (tonnes < 200)  return { label: 'Modéré',  bg: 'rgba(48,209,88,0.12)',  fg: '#30D158' };
+    if (tonnes < 500)  return { label: 'Élevé',   bg: 'rgba(255,159,10,0.15)', fg: '#FF9F0A' };
+    if (tonnes < 2000) return { label: 'Très élevé', bg: 'rgba(255,107,0,0.15)', fg: '#FF6B00' };
+    return                    { label: 'Majeur',   bg: 'rgba(255,59,48,0.15)',  fg: '#FF3B30' };
+  }
+
   getBarWidth(site: Site): number {
     if (!this.maxFootprint) return 0;
     return Math.min(100, ((site.totalFootprint ?? 0) / this.maxFootprint) * 100);
@@ -1026,7 +1040,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
 
   /* ── Export CSV ── */
   exportCsv(): void {
-    const headers = ['Nom', 'Localisation', 'Surface (m²)', 'CO₂ total (t)', 'CO₂/m² (kg)', 'Employés', 'Construction (t)', 'Exploitation (t)'];
+    const headers = ['Nom', 'Localisation', 'Surface (m²)', 'CO₂ total (t/an)', 'CO₂/m²/an (kg)', 'Employés', 'Construction (t)', 'Exploitation (t/an)', 'Grade efficacité', 'Impact absolu'];
     const rows = this.sites.map(s => [
       s.name,
       s.location ?? '',
@@ -1036,6 +1050,8 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       s.employees ?? '',
       ((s.constructionFootprint ?? 0) / 1000).toFixed(2),
       ((s.operationalFootprint  ?? 0) / 1000).toFixed(2),
+      this.getCarbonScore(s).grade,
+      this.getImpactLevel(s).label,
     ]);
     const csv = [headers, ...rows]
       .map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
