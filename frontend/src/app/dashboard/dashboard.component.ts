@@ -824,7 +824,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
         plugins: {
           legend: {
             position: 'bottom',
-            labels: { color: textColor, padding: 16, font: { size: 13 }, usePointStyle: true, pointStyleWidth: 10 }
+            labels: { color: textColor, padding: 16, font: { size: 13 }, usePointStyle: true, pointStyle: 'circle', boxWidth: 8, boxHeight: 8 }
           },
           tooltip: {
             callbacks: {
@@ -945,6 +945,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
             stack: 'co2',
             borderRadius: 0,
             borderSkipped: false,
+            pointStyle: 'circle',
           },
           {
             label: 'Exploitation',
@@ -953,6 +954,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
             stack: 'co2',
             borderRadius: 6,
             borderSkipped: false,
+            pointStyle: 'circle',
           }
         ]
       },
@@ -963,7 +965,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
           legend: {
             display: true,
             position: 'bottom',
-            labels: { color: textColor, padding: 16, font: { size: 13 }, usePointStyle: true, pointStyleWidth: 10 }
+            labels: { color: textColor, padding: 16, font: { size: 13 }, usePointStyle: true, pointStyle: 'circle', boxWidth: 8, boxHeight: 8 }
           },
           tooltip: { callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${ctx.raw} t CO\u2082` } }
         },
@@ -1004,6 +1006,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
             stack: 'mat',
             borderRadius: 0,
             borderSkipped: false,
+            pointStyle: 'circle',
           },
           {
             label: 'Acier',
@@ -1012,6 +1015,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
             stack: 'mat',
             borderRadius: 0,
             borderSkipped: false,
+            pointStyle: 'circle',
           },
           {
             label: 'Verre',
@@ -1020,6 +1024,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
             stack: 'mat',
             borderRadius: 0,
             borderSkipped: false,
+            pointStyle: 'circle',
           },
           {
             label: 'Bois',
@@ -1028,6 +1033,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
             stack: 'mat',
             borderRadius: 6,
             borderSkipped: false,
+            pointStyle: 'circle',
           }
         ]
       },
@@ -1038,7 +1044,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
           legend: {
             display: true,
             position: 'bottom',
-            labels: { color: textColor, padding: 12, font: { size: 12 }, usePointStyle: true, pointStyleWidth: 10 }
+            labels: { color: textColor, padding: 12, font: { size: 12 }, usePointStyle: true, pointStyle: 'circle', boxWidth: 8, boxHeight: 8 }
           },
           tooltip: { callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${ctx.raw} t` } }
         },

@@ -844,7 +844,8 @@ export class SiteDetailComponent implements OnInit, OnDestroy, AfterViewChecked 
             backgroundColor: 'rgba(0, 122, 255, 0.7)',
             borderRadius: 4,
             stack: 'stack',
-            order: 2
+            order: 2,
+            pointStyle: 'circle',
           },
           {
             label: 'Exploitation',
@@ -852,7 +853,8 @@ export class SiteDetailComponent implements OnInit, OnDestroy, AfterViewChecked 
             backgroundColor: 'rgba(52, 199, 89, 0.7)',
             borderRadius: 4,
             stack: 'stack',
-            order: 2
+            order: 2,
+            pointStyle: 'circle',
           },
           {
             label: 'Total annualisé',
@@ -867,7 +869,8 @@ export class SiteDetailComponent implements OnInit, OnDestroy, AfterViewChecked 
             pointBorderWidth: 2,
             tension: 0.3,
             fill: true,
-            order: 1
+            order: 1,
+            pointStyle: 'circle',
           }
         ]
       },
@@ -884,7 +887,9 @@ export class SiteDetailComponent implements OnInit, OnDestroy, AfterViewChecked 
               font: { size: 11, family: "'Outfit', sans-serif" },
               padding: 16,
               usePointStyle: true,
-              pointStyleWidth: 12
+              pointStyle: 'circle',
+              boxWidth: 8,
+              boxHeight: 8
             }
           },
           tooltip: {

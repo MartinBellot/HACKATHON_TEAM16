@@ -141,7 +141,7 @@ import { LoginRequest } from '../models/site.model';
       height: 100%;
       position: relative;
       overflow: hidden;
-      background: #070b09;
+      background: #ffffff;
     }
 
     /* ── Topographic animated background ── */
@@ -159,16 +159,16 @@ import { LoginRequest } from '../models/site.model';
 
     .contour {
       stroke-width: 0.8;
-      stroke: rgba(0, 232, 143, 0.08);
+      stroke: rgba(0, 180, 120, 0.12);
       animation: drift 20s ease-in-out infinite alternate;
     }
     .c1 { animation-delay: 0s; }
-    .c2 { stroke: rgba(0, 180, 216, 0.07); animation-delay: -3s; animation-duration: 24s; }
+    .c2 { stroke: rgba(0, 140, 200, 0.10); animation-delay: -3s; animation-duration: 24s; }
     .c3 { animation-delay: -6s; animation-duration: 22s; }
-    .c4 { stroke: rgba(0, 180, 216, 0.06); animation-delay: -9s; animation-duration: 26s; }
+    .c4 { stroke: rgba(0, 140, 200, 0.08); animation-delay: -9s; animation-duration: 26s; }
     .c5 { animation-delay: -2s; animation-duration: 18s; }
-    .c6 { stroke: rgba(0, 232, 143, 0.05); animation-delay: -5s; animation-duration: 28s; }
-    .c7 { stroke: rgba(0, 180, 216, 0.06); animation-delay: -7s; animation-duration: 21s; }
+    .c6 { stroke: rgba(0, 180, 120, 0.07); animation-delay: -5s; animation-duration: 28s; }
+    .c7 { stroke: rgba(0, 140, 200, 0.08); animation-delay: -7s; animation-duration: 21s; }
 
     @keyframes drift {
       0% { transform: translateX(0) translateY(0); }
@@ -176,23 +176,23 @@ import { LoginRequest } from '../models/site.model';
     }
 
     .pulse-dot {
-      fill: #00e88f;
+      fill: #00c472;
       animation: pulse 3s ease-in-out infinite;
     }
     .d1 { animation-delay: 0s; }
-    .d2 { animation-delay: -1s; fill: #00b4d8; }
+    .d2 { animation-delay: -1s; fill: #0090c0; }
     .d3 { animation-delay: -2s; }
-    .d4 { animation-delay: -0.5s; fill: #00b4d8; }
+    .d4 { animation-delay: -0.5s; fill: #0090c0; }
 
     @keyframes pulse {
-      0%, 100% { opacity: 0.15; r: 2; }
-      50% { opacity: 0.7; r: 5; }
+      0%, 100% { opacity: 0.2; r: 2; }
+      50% { opacity: 0.6; r: 5; }
     }
 
     .grain {
       position: absolute;
       inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.02'/%3E%3C/svg%3E");
       background-repeat: repeat;
       background-size: 256px;
     }
@@ -211,13 +211,13 @@ import { LoginRequest } from '../models/site.model';
     .brand-block { margin-bottom: 3.5rem; }
 
     .logo-mark {
-      width: 64px;
-      height: 64px;
+      width: 192px;
+      height: 192px;
       margin-bottom: 2rem;
       animation: fadeUp 0.6s ease-out both;
     }
 
-    .logo-mark img { width: 100%; height: 100%; border-radius: 12px; object-fit: contain; }
+    .logo-mark img { width: 100%; height: 100%; border-radius: 16px; object-fit: contain; }
 
     .brand-title {
       font-family: 'Syne', sans-serif;
@@ -225,7 +225,7 @@ import { LoginRequest } from '../models/site.model';
       font-size: 3.2rem;
       line-height: 1.05;
       letter-spacing: -2px;
-      color: #f0ede8;
+      color: #1a1a1a;
       margin-bottom: 1.25rem;
       animation: fadeUp 0.6s ease-out 0.1s both;
     }
@@ -235,7 +235,7 @@ import { LoginRequest } from '../models/site.model';
       font-weight: 300;
       font-size: 1.05rem;
       line-height: 1.6;
-      color: rgba(240, 237, 232, 0.45);
+      color: #777;
       animation: fadeUp 0.6s ease-out 0.2s both;
     }
 
@@ -257,9 +257,9 @@ import { LoginRequest } from '../models/site.model';
       align-items: center;
       gap: 0.5rem;
       padding: 0.5rem 1rem;
-      border: 1px solid rgba(0, 232, 143, 0.12);
+      border: 1px solid rgba(0, 196, 114, 0.2);
       border-radius: 100px;
-      background: rgba(0, 232, 143, 0.04);
+      background: rgba(0, 196, 114, 0.06);
       animation: fadeUp 0.5s ease-out both;
     }
 
@@ -267,12 +267,12 @@ import { LoginRequest } from '../models/site.model';
       font-family: 'Syne', sans-serif;
       font-weight: 700;
       font-size: 0.9rem;
-      color: #00e88f;
+      color: #00a060;
     }
 
     .stat-label {
       font-size: 0.78rem;
-      color: rgba(240, 237, 232, 0.35);
+      color: #999;
       font-weight: 400;
     }
 
@@ -284,7 +284,7 @@ import { LoginRequest } from '../models/site.model';
       align-items: center;
       gap: 0.6rem;
       font-size: 0.75rem;
-      color: rgba(240, 237, 232, 0.25);
+      color: #bbb;
       letter-spacing: 0.5px;
       text-transform: uppercase;
       font-weight: 500;
@@ -294,7 +294,7 @@ import { LoginRequest } from '../models/site.model';
       width: 6px;
       height: 6px;
       border-radius: 50%;
-      background: #00e88f;
+      background: #00c472;
       animation: pulse 2s ease-in-out infinite;
     }
 
@@ -312,11 +312,12 @@ import { LoginRequest } from '../models/site.model';
     .form-shell {
       width: 100%;
       max-width: 400px;
-      background: rgba(16, 22, 18, 0.85);
+      background: #f7f7f8;
       backdrop-filter: blur(40px);
-      border: 1px solid rgba(255,255,255,0.06);
+      border: 1px solid #e5e5e5;
       border-radius: 20px;
       padding: 2.5rem;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
       animation: fadeUp 0.6s ease-out 0.3s both;
     }
 
@@ -326,7 +327,7 @@ import { LoginRequest } from '../models/site.model';
     .mode-tabs {
       display: flex;
       position: relative;
-      background: rgba(255,255,255,0.04);
+      background: #ececec;
       border-radius: 12px;
       padding: 4px;
     }
@@ -336,7 +337,7 @@ import { LoginRequest } from '../models/site.model';
       padding: 0.65rem 0;
       background: none;
       border: none;
-      color: rgba(240, 237, 232, 0.4);
+      color: #999;
       font-family: 'Outfit', sans-serif;
       font-size: 0.88rem;
       font-weight: 500;
@@ -346,7 +347,7 @@ import { LoginRequest } from '../models/site.model';
       transition: color 0.3s;
     }
 
-    .tab.active { color: #f0ede8; }
+    .tab.active { color: #1a1a1a; }
 
     .tab-indicator {
       position: absolute;
@@ -354,9 +355,10 @@ import { LoginRequest } from '../models/site.model';
       left: 4px;
       width: calc(50% - 4px);
       height: calc(100% - 8px);
-      background: rgba(0, 232, 143, 0.12);
-      border: 1px solid rgba(0, 232, 143, 0.15);
+      background: #ffffff;
+      border: 1px solid #ddd;
       border-radius: 9px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
       transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
@@ -371,7 +373,7 @@ import { LoginRequest } from '../models/site.model';
       display: block;
       font-size: 0.78rem;
       font-weight: 500;
-      color: rgba(240, 237, 232, 0.4);
+      color: #888;
       margin-bottom: 0.45rem;
       letter-spacing: 0.3px;
       text-transform: uppercase;
@@ -380,10 +382,10 @@ import { LoginRequest } from '../models/site.model';
     .field input {
       width: 100%;
       padding: 0.8rem 1rem;
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.08);
+      background: #ffffff;
+      border: 1px solid #ddd;
       border-radius: 11px;
-      color: #f0ede8;
+      color: #1a1a1a;
       font-family: 'Outfit', sans-serif;
       font-size: 0.95rem;
       font-weight: 400;
@@ -391,14 +393,14 @@ import { LoginRequest } from '../models/site.model';
     }
 
     .field input::placeholder {
-      color: rgba(240, 237, 232, 0.2);
+      color: #ccc;
     }
 
     .field input:focus {
       outline: none;
-      border-color: rgba(0, 232, 143, 0.35);
-      background: rgba(0, 232, 143, 0.04);
-      box-shadow: 0 0 0 3px rgba(0, 232, 143, 0.06), inset 0 0 20px rgba(0, 232, 143, 0.02);
+      border-color: #00c472;
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(0, 196, 114, 0.1);
     }
 
     /* ── Messages ── */
@@ -413,15 +415,15 @@ import { LoginRequest } from '../models/site.model';
     }
 
     .msg-error {
-      color: #ff6b6b;
-      background: rgba(255, 107, 107, 0.08);
-      border: 1px solid rgba(255, 107, 107, 0.15);
+      color: #e53e3e;
+      background: rgba(229, 62, 62, 0.08);
+      border: 1px solid rgba(229, 62, 62, 0.2);
     }
 
     .msg-success {
-      color: #00e88f;
-      background: rgba(0, 232, 143, 0.08);
-      border: 1px solid rgba(0, 232, 143, 0.15);
+      color: #00a060;
+      background: rgba(0, 160, 96, 0.08);
+      border: 1px solid rgba(0, 160, 96, 0.2);
     }
 
     /* ── Submit button ── */
@@ -433,10 +435,10 @@ import { LoginRequest } from '../models/site.model';
       width: 100%;
       padding: 0.85rem 1.5rem;
       margin-top: 0.5rem;
-      background: linear-gradient(135deg, #00e88f 0%, #00b4d8 100%);
+      background: linear-gradient(135deg, #00c472 0%, #0090c0 100%);
       border: none;
       border-radius: 12px;
-      color: #070b09;
+      color: #ffffff;
       font-family: 'Syne', sans-serif;
       font-size: 0.95rem;
       font-weight: 700;
@@ -460,7 +462,7 @@ import { LoginRequest } from '../models/site.model';
 
     .btn-submit:hover {
       transform: translateY(-1px);
-      box-shadow: 0 8px 30px rgba(0, 232, 143, 0.2), 0 2px 8px rgba(0, 232, 143, 0.15);
+      box-shadow: 0 8px 30px rgba(0, 196, 114, 0.25), 0 2px 8px rgba(0, 196, 114, 0.15);
     }
 
     .btn-submit:active { transform: translateY(0); }
@@ -472,13 +474,13 @@ import { LoginRequest } from '../models/site.model';
       box-shadow: none;
     }
 
-    .btn-arrow { flex-shrink: 0; }
+    .btn-arrow { flex-shrink: 0; color: #ffffff; }
 
     .btn-loader {
       width: 20px;
       height: 20px;
-      border: 2.5px solid rgba(7, 11, 9, 0.2);
-      border-top-color: #070b09;
+      border: 2.5px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #ffffff;
       border-radius: 50%;
       animation: spin 0.65s linear infinite;
     }
@@ -490,16 +492,16 @@ import { LoginRequest } from '../models/site.model';
       text-align: center;
       margin-top: 1.5rem;
       font-size: 0.8rem;
-      color: rgba(240, 237, 232, 0.25);
+      color: #aaa;
     }
 
     .demo-hint code {
       display: inline-block;
       padding: 0.15rem 0.45rem;
-      background: rgba(0, 232, 143, 0.08);
-      border: 1px solid rgba(0, 232, 143, 0.12);
+      background: rgba(0, 196, 114, 0.1);
+      border: 1px solid rgba(0, 196, 114, 0.2);
       border-radius: 5px;
-      color: #00e88f;
+      color: #00a060;
       font-family: 'Outfit', monospace;
       font-size: 0.78rem;
       font-weight: 500;

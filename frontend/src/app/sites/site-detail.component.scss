@@ -429,8 +429,8 @@ $grade-g: #C81E1E;
 }
 
 .env-card {
-  background: var(--bg-secondary);
-  border: 1px solid var(--separator);
+  background: #ffffff !important;
+  border: 1px solid #e8e8e8 !important;
   border-radius: 14px;
   padding: 1rem 1.25rem;
   transition: border-color 0.2s;
@@ -444,7 +444,7 @@ $grade-g: #C81E1E;
   gap: 0.5rem;
   margin-bottom: 0.8rem;
 
-  svg { width: 16px; height: 16px; color: var(--text-tertiary); }
+  svg { width: 16px; height: 16px; color: var(--text-secondary); }
 
   h3 {
     font-family: $font-display;
@@ -490,8 +490,9 @@ $grade-g: #C81E1E;
 }
 
 .env-kpi-lbl {
-  font-size: 0.62rem;
-  color: var(--text-tertiary);
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #666 !important;
 }
 
 .dpe-grade { font-weight: 800; font-size: 1.3rem; }
