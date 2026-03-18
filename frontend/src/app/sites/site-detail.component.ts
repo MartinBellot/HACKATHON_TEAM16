@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewChecked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SiteService } from '../services/site.service';
@@ -7,6 +7,7 @@ import { PdfReportService } from '../services/pdf-report.service';
 import { Site } from '../models/site.model';
 import { EnvironmentalContext, YearlyFootprint } from '../models/environmental-context.model';
 import { Chart, registerables } from 'chart.js';
+import maplibregl from 'maplibre-gl';
 
 interface Recommendation {
   icon: string;
@@ -217,6 +218,16 @@ interface MaterialBar {
         </div>
       </section>
 
+      <!-- ═══ LOCALISATION MAP ═══ -->
+      <section class="section map-section" style="--delay: 1.5" *ngIf="site.latitude && site.longitude">
+        <div class="section-label">
+          <span class="section-marker section-marker--accent"></span>
+          Localisation du site
+          <span class="map-coords">{{ site.latitude?.toFixed(4) }}°N, {{ site.longitude?.toFixed(4) }}°E</span>
+        </div>
+        <div class="map-container" id="siteMap"></div>
+      </section>
+
       <!-- ═══ EVOLUTION ═══ -->
       <section class="section evolution-section" style="--delay: 2" *ngIf="historyData.length > 0">
         <div class="section-label">
@@ -343,7 +354,7 @@ interface MaterialBar {
   `,
   styleUrls: ['./site-detail.component.scss']
 })
-export class SiteDetailComponent implements OnInit, OnDestroy {
+export class SiteDetailComponent implements OnInit, OnDestroy, AfterViewChecked {
   site: Site | null = null;
   envContext: EnvironmentalContext | null = null;
   historyData: YearlyFootprint[] = [];
@@ -352,6 +363,8 @@ export class SiteDetailComponent implements OnInit, OnDestroy {
   materials: MaterialBar[] = [];
   metrics: { icon: string; value: string; label: string; sub?: string }[] = [];
   private evolutionChart: Chart | null = null;
+  private map: maplibregl.Map | null = null;
+  private mapInitialized = false;
 
   gradeInfo = { grade: 'C', bg: '', fg: '#FFCC00' };
   impactInfo = { label: 'Modéré', bg: 'rgba(48,209,88,0.12)', fg: '#30D158' };
@@ -402,8 +415,155 @@ export class SiteDetailComponent implements OnInit, OnDestroy {
     });
   }
 
+  ngAfterViewChecked(): void {
+    if (this.site?.latitude && this.site?.longitude && !this.mapInitialized) {
+      const container = document.getElementById('siteMap');
+      if (container) {
+        this.mapInitialized = true;
+        setTimeout(() => this.initMap(), 50);
+      }
+    }
+  }
+
   ngOnDestroy(): void {
     this.evolutionChart?.destroy();
+    if (this.map) { this.map.remove(); this.map = null; }
+  }
+
+  private initMap(): void {
+    if (!this.site?.latitude || !this.site?.longitude) return;
+    const lat = this.site.latitude;
+    const lng = this.site.longitude;
+
+    this.map = new maplibregl.Map({
+      container: 'siteMap',
+      style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+      center: [lng, lat],
+      zoom: 15.5,
+      pitch: 55,
+      bearing: -20
+    });
+
+    this.map.addControl(new maplibregl.NavigationControl(), 'top-right');
+
+    // Popup
+    const popupHtml = `
+      <div style="font-family: 'Outfit', sans-serif; min-width: 180px; padding: 4px 0;">
+        <strong style="font-size: 14px; color: #1a1a1a;">${this.site.name}</strong><br>
+        <span style="color: #666; font-size: 12px;">${this.site.location || ''}</span>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 8px 0;">
+        <span style="font-size: 13px; color: #333;">
+          <strong style="color: ${this.gradeInfo.fg}; font-size: 18px;">${this.gradeInfo.grade}</strong> ·
+          ${this.formatKgM2(this.site.footprintPerM2)} kgCO₂/m²/an
+        </span>
+      </div>
+    `;
+
+    const popup = new maplibregl.Popup({ offset: 30, closeButton: false })
+      .setHTML(popupHtml);
+
+    // Pulsing marker element
+    const markerEl = document.createElement('div');
+    markerEl.innerHTML = `
+      <div style="position:relative;width:40px;height:40px;">
+        <div style="position:absolute;inset:0;border-radius:50%;background:rgba(0,122,255,0.15);animation:mapPulse 2s ease-in-out infinite;"></div>
+        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:16px;height:16px;border-radius:50%;background:#007AFF;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,122,255,0.4);"></div>
+      </div>
+    `;
+
+    new maplibregl.Marker({ element: markerEl })
+      .setLngLat([lng, lat])
+      .setPopup(popup)
+      .addTo(this.map)
+      .togglePopup();
+
+    // Add 3D buildings on style load
+    this.map.on('load', () => {
+      const layers = this.map!.getStyle().layers;
+      // Find the first symbol layer to insert 3D buildings below labels
+      let labelLayerId: string | undefined;
+      for (const layer of layers || []) {
+        if (layer.type === 'symbol' && (layer as any).layout?.['text-field']) {
+          labelLayerId = layer.id;
+          break;
+        }
+      }
+
+      // Add 3D building extrusions
+      if (!this.map!.getSource('openmaptiles')) {
+        this.map!.addSource('openmaptiles', {
+          type: 'vector',
+          url: 'https://tiles.openfreemap.org/planet'
+        });
+      }
+
+      this.map!.addLayer({
+        id: '3d-buildings',
+        source: 'openmaptiles',
+        'source-layer': 'building',
+        type: 'fill-extrusion',
+        minzoom: 14,
+        paint: {
+          'fill-extrusion-color': [
+            'interpolate', ['linear'], ['get', 'render_height'],
+            0, '#dce6f0',
+            30, '#b8c9db',
+            60, '#94adc6'
+          ],
+          'fill-extrusion-height': ['get', 'render_height'],
+          'fill-extrusion-base': ['get', 'render_min_height'],
+          'fill-extrusion-opacity': 0.75
+        }
+      }, labelLayerId);
+
+      // 500m radius circle (DPE search radius)
+      const circleCoords = this.generateCircle(lng, lat, 500, 64);
+      this.map!.addSource('radius', {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          geometry: { type: 'Polygon', coordinates: [circleCoords] },
+          properties: {}
+        }
+      });
+
+      this.map!.addLayer({
+        id: 'radius-fill',
+        type: 'fill',
+        source: 'radius',
+        paint: {
+          'fill-color': '#007AFF',
+          'fill-opacity': 0.06
+        }
+      });
+
+      this.map!.addLayer({
+        id: 'radius-border',
+        type: 'line',
+        source: 'radius',
+        paint: {
+          'line-color': '#007AFF',
+          'line-width': 1.5,
+          'line-dasharray': [4, 3],
+          'line-opacity': 0.5
+        }
+      });
+    });
+  }
+
+  private generateCircle(lng: number, lat: number, radiusM: number, points: number): [number, number][] {
+    const coords: [number, number][] = [];
+    const km = radiusM / 1000;
+    for (let i = 0; i <= points; i++) {
+      const angle = (i / points) * 2 * Math.PI;
+      const dx = km * Math.cos(angle);
+      const dy = km * Math.sin(angle);
+      coords.push([
+        lng + (dx / (111.32 * Math.cos(lat * Math.PI / 180))),
+        lat + (dy / 110.574)
+      ]);
+    }
+    return coords;
   }
 
   goBack(): void {
